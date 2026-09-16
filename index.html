@@ -1,0 +1,1752 @@
+<title>Piano Fotovoltaico J@M</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3f5f2;
+    --surface: #ffffff;
+    --surface-2: #e9ede8;
+    --ink: #141a17;
+    --ink-2: #4b5651;
+    --muted: #7c867f;
+    --line: #dde2dd;
+    --line-strong: #c4ccc6;
+    --accent: #0f5e4a;
+    --accent-soft: #e2f0ea;
+    --accent-ink: #ffffff;
+    --s-bill: #2a78d6;
+    --s-pv: #eb6834;
+    --s-save: #1baf7a;
+    --s-save-soft: rgba(27,175,122,.16);
+    --good: #0ca30c;
+    --good-text: #006300;
+    --critical: #d03b3b;
+    --warn: #b9770e;
+    --warn-soft: #fbf1df;
+    --shadow: 0 1px 2px rgba(20,26,23,.06), 0 8px 24px -12px rgba(20,26,23,.18);
+    --font-display: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+    --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0e1110; --surface: #171b19; --surface-2: #1f2522; --ink: #f1f4f1; --ink-2: #b6bfb9; --muted: #86908a;
+      --line: #2a312d; --line-strong: #3a433e; --accent: #3fb391; --accent-soft: #163229; --accent-ink: #08130f;
+      --s-bill: #3987e5; --s-pv: #d95926; --s-save: #199e70; --s-save-soft: rgba(25,158,112,.2);
+      --good: #0ca30c; --good-text: #3fcf3f; --critical: #e66767; --warn: #e0a33a; --warn-soft: #2d2415;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0e1110; --surface: #171b19; --surface-2: #1f2522; --ink: #f1f4f1; --ink-2: #b6bfb9; --muted: #86908a;
+    --line: #2a312d; --line-strong: #3a433e; --accent: #3fb391; --accent-soft: #163229; --accent-ink: #08130f;
+    --s-bill: #3987e5; --s-pv: #d95926; --s-save: #199e70; --s-save-soft: rgba(25,158,112,.2);
+    --good: #0ca30c; --good-text: #3fcf3f; --critical: #e66767; --warn: #e0a33a; --warn-soft: #2d2415;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  h1, h2, h3 { margin: 0; text-wrap: balance; font-family: var(--font-display); }
+  p { margin: 0; }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .app { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 0; min-height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .side { background: var(--surface); border-right: 1px solid var(--line); padding: 22px 20px 40px; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
+  .side-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+  .side-head h2 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+  .side-sub { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+  .chip { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 600; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.ghost { border-style: dashed; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .brand .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-family: var(--font-display); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; letter-spacing: -.02em; }
+  .brand .t { font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.1; }
+  .brand .s { font-size: 11.5px; color: var(--muted); }
+
+  details.group { border-top: 1px solid var(--line); padding: 4px 0 8px; }
+  details.group:last-of-type { border-bottom: 1px solid var(--line); }
+  details.group > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0 8px; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: .01em; }
+  details.group > summary::-webkit-details-marker { display: none; }
+  details.group > summary::after { content: ""; width: 8px; height: 8px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); margin-right: 4px; transition: transform .15s; }
+  details.group[open] > summary::after { transform: rotate(225deg); margin-top: 4px; }
+  details.group.agent > summary { color: var(--warn); }
+  .fields { display: grid; gap: 12px; padding-bottom: 6px; }
+
+  .field label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink-2); font-weight: 500; }
+  .field .derived { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .field .row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+  .field input[type="number"], .field input[type="text"], .field select { width: 100%; min-width: 0; font: inherit; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); background: var(--surface-2); border: 1px solid transparent; border-radius: 6px; padding: 7px 9px; }
+  .field input[type="text"] { font-weight: 500; }
+  .field input:focus, .field select:focus { border-color: var(--accent); background: var(--surface); outline: none; }
+  .field .unit { color: var(--muted); font-size: 12.5px; white-space: nowrap; min-width: 44px; }
+  .field input[type="range"] { width: 100%; margin: 6px 0 0; accent-color: var(--accent); }
+  .field .hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+  .field .hint.warn { color: var(--warn); }
+  .field .hint.ok { color: var(--good-text); }
+  .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; margin-top: 5px; }
+  .seg button { flex: 1; border: 0; background: transparent; color: var(--ink-2); padding: 7px 6px; font-size: 12.5px; font-weight: 600; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .check { display: flex; align-items: flex-start; gap: 9px; margin-top: 4px; cursor: pointer; }
+  .check input { margin: 3px 0 0; accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
+  .check .cl { font-size: 13px; color: var(--ink); font-weight: 600; line-height: 1.3; }
+
+  /* ---------- Main ---------- */
+  .main { padding: 28px 36px 64px; min-width: 0; }
+  .wrap { max-width: 1040px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .topbar .date { font-size: 12.5px; color: var(--muted); }
+  .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 8px; padding: 8px 14px; font-weight: 600; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px; }
+  .btn.secondary { background: var(--surface); color: var(--accent); }
+  .btn svg { width: 15px; height: 15px; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .hero { position: relative; padding: 26px 28px 22px; margin: -4px -8px 0; border-radius: 14px; background: linear-gradient(160deg, var(--accent-soft), transparent 70%); overflow: hidden; }
+  .titlebar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-top: 6px; }
+  h1 { font-size: clamp(28px, 3.4vw, 42px); font-weight: 700; letter-spacing: -.025em; line-height: 1.02; }
+  .lede { color: var(--ink-2); max-width: 66ch; margin-top: 12px; font-size: 16px; line-height: 1.55; }
+  .hint-vars { color: var(--muted); font-size: 14px; }
+  .hint-vars a { color: var(--accent); font-weight: 600; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 18px; }
+  .fact { display: flex; flex-direction: column; }
+  .fact b { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .fact span { font-size: 12px; color: var(--muted); }
+  .mosaic { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 18px; max-width: 560px; }
+  .mosaic i { width: 10px; height: 14px; border-radius: 2px; background: var(--s-pv); opacity: .85; }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+  .why { position: relative; padding-top: 18px; }
+  .why h3 { font-size: 16px; font-weight: 600; margin: 8px 0 8px; }
+  .why p { color: var(--ink-2); font-size: 14px; line-height: 1.55; }
+  .why-n { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--accent); background: var(--accent-soft); width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+  .fam { text-align: left; }
+  .fam .f-label { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+  .fam .f-value { font-family: var(--font-display); font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin-top: 6px; line-height: 1.1; }
+  .fam .f-sub { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+  .fam.best { border-color: var(--s-save); }
+  .fam.best .f-value { color: var(--good-text); }
+  .steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 12px; }
+  .steps li { position: relative; padding-left: 44px; color: var(--ink-2); font-size: 14.5px; line-height: 1.55; max-width: 72ch; }
+  .steps li b { color: var(--ink); }
+  .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-family: var(--font-display); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .faq { display: grid; gap: 8px; }
+  .faq details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0 18px; }
+  .faq summary { cursor: pointer; padding: 14px 0; font-weight: 600; font-size: 15px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; font-family: var(--font-display); font-size: 20px; color: var(--accent); flex-shrink: 0; }
+  .faq details[open] summary::after { content: "−"; }
+  .faq .a { padding: 0 0 16px; color: var(--ink-2); font-size: 14.5px; line-height: 1.6; max-width: 72ch; }
+  .faq .a b { color: var(--ink); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--warn-soft); color: var(--warn); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.ok { background: var(--accent-soft); color: var(--accent); }
+
+  .kpis { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 12px; margin-top: 26px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 12px; min-width: 0; }
+  .kpi .k-label { font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+  .kpi .k-value { font-family: var(--font-display); font-size: 27px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin-top: 6px; overflow-wrap: anywhere; }
+  .kpi .k-sub { font-size: 12px; color: var(--muted); margin-top: 5px; }
+  .kpi.hero { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); grid-row: span 2; display: flex; flex-direction: column; justify-content: center; }
+  .kpi.hero .k-label, .kpi.hero .k-sub { color: var(--accent-ink); opacity: .82; }
+  .kpi.hero .k-value { font-size: 40px; }
+
+  .story { margin-top: 22px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; padding: 18px 22px; }
+  .story h2 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .story p { max-width: 70ch; color: var(--ink); font-size: 15.5px; line-height: 1.6; }
+  .story p + p { margin-top: 8px; }
+  .story b { font-weight: 700; }
+
+  section.block { margin-top: 30px; }
+  section.block > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 10px; }
+  section.block h2 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  section.block .sub { color: var(--muted); font-size: 13px; max-width: 70ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .legend i.line { height: 0; border-top: 2px solid; border-radius: 0; }
+  .legend i.dash { height: 0; border-top: 2px dashed; border-radius: 0; }
+
+  .chart { width: 100%; height: auto; display: block; }
+  .chart text { font-family: var(--font-body); font-size: 12px; fill: var(--muted); }
+  .chart text.val { fill: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .chart text.strong { fill: var(--ink); font-weight: 700; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart .axis { stroke: var(--line-strong); stroke-width: 1; }
+  .chart .hit { fill: transparent; }
+
+  .tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); padding: 7px 10px; border-radius: 6px; font-size: 12.5px; line-height: 1.35; box-shadow: var(--shadow); max-width: 260px; display: none; white-space: nowrap; }
+  .tip b { font-weight: 700; }
+
+  .fin { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+  .fin .box { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; }
+  .fin .box .lab { font-size: 12.5px; color: var(--ink-2); }
+  .fin .box .num { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-top: 3px; letter-spacing: -.01em; }
+  .fin .box .num.pos { color: var(--good-text); }
+  .fin .box .num.neg { color: var(--critical); }
+  .bars2 { margin-top: 14px; display: grid; gap: 8px; }
+  .chartnote { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+  .cassa { margin-top: 16px; background: var(--warn-soft); border-radius: 8px; padding: 12px 14px; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); max-width: 78ch; }
+  .cassa b { color: var(--ink); }
+  .bar-row { display: grid; grid-template-columns: 150px 1fr 90px; align-items: center; gap: 10px; font-size: 13px; }
+  .bar-row .track { height: 14px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .bar-row .fill { height: 100%; border-radius: 4px; }
+  .bar-row .n { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 860px; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--ink-2); background: var(--surface-2); position: sticky; top: 0; font-size: 12px; }
+  th:first-child, td:first-child { text-align: left; }
+  td.neg { color: var(--critical); }
+  td.cum { font-weight: 700; }
+  tr.pay td { background: var(--s-save-soft); }
+  tfoot td { font-weight: 700; background: var(--surface-2); }
+
+  .inc { display: grid; gap: 8px; }
+  .inc .it { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); align-items: start; }
+  .inc .st { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; text-align: center; margin-top: 2px; }
+  .inc .st.on { background: var(--s-save-soft); color: var(--good-text); }
+  .inc .st.off { background: var(--surface-2); color: var(--ink-2); }
+  .inc .st.na { background: var(--surface-2); color: var(--muted); text-decoration: line-through; }
+  .inc .st.chk { background: var(--warn-soft); color: var(--warn); }
+  .inc h3 { font-size: 14.5px; font-weight: 600; }
+  .inc h3 span { font-weight: 600; color: var(--good-text); font-family: var(--font-body); font-size: 13.5px; margin-left: 8px; }
+  .inc p { font-size: 13px; color: var(--ink-2); line-height: 1.5; margin-top: 3px; max-width: 78ch; }
+  .inc.na-list .it { opacity: .75; }
+
+  .assump { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 24px; }
+  .assump dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13.5px; }
+  .assump dt { color: var(--ink-2); }
+  .assump dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .assump h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .03em; padding: 1px 7px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+  .tag.bill { background: rgba(42,120,214,.13); color: var(--s-bill); }
+  .tag.todo { background: var(--warn-soft); color: var(--warn); }
+  .tag.norm { background: var(--accent-soft); color: var(--accent); }
+  .sources { margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+  .sources ul { margin: 6px 0 0; padding-left: 18px; }
+  .sources li { margin: 3px 0; }
+  .foot { margin-top: 36px; color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 14px; max-width: 70ch; }
+  .contact { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; padding: 16px 18px; background: var(--accent-soft); border-radius: 10px; }
+  .contact b { font-family: var(--font-display); font-size: 16px; }
+  .contact span { color: var(--ink-2); font-size: 14px; }
+  .print-head { display: none; }
+  .agentbox { margin-top: 30px; border: 1px dashed var(--warn); border-radius: 10px; padding: 14px 18px; background: var(--warn-soft); }
+  .agentbox h2 { font-size: 15px; font-weight: 700; color: var(--warn); margin-bottom: 8px; }
+  .agentbox p, .agentbox li { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+  .agentbox ul { margin: 6px 0 0; padding-left: 18px; }
+  .agentbox .big { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--ink); }
+
+  .only-mobile { display: none; }
+  @media (max-width: 960px) {
+    .only-mobile { display: inline; }
+    .only-desktop { display: none; }
+    .app { grid-template-columns: 1fr; }
+    .side { position: static; max-height: none; border-right: 0; border-top: 1px solid var(--line); order: 2; }
+    .main { order: 1; padding: 16px 16px 40px; }
+    .hero { margin: 0; padding: 20px 18px 18px; }
+    .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .kpi.hero { grid-row: auto; grid-column: span 2; }
+    .two, .three, .assump { grid-template-columns: 1fr; }
+    .fin { grid-template-columns: 1fr 1fr; }
+    .bar-row { grid-template-columns: 90px 1fr 80px; }
+    .inc .it { grid-template-columns: 1fr; gap: 6px; }
+    .inc .st { justify-self: start; }
+  }
+  @media (max-width: 520px) {
+    .kpis { grid-template-columns: 1fr; }
+    .kpi.hero { grid-column: auto; grid-row: auto; }
+    .fin { grid-template-columns: 1fr; }
+    h1 { font-size: 28px; }
+  }
+  @media print {
+    @page { size: A4; margin: 12mm 12mm 14mm; }
+    :root { color-scheme: light; --bg: #fff; --surface: #fff; --surface-2: #f1f3f0; --ink: #111; --ink-2: #333; --muted: #666; --line: #ddd; --line-strong: #bbb; }
+    body { font-size: 12.5px; background: #fff; }
+    .side, .tip, .topbar, .noprint, .agentbox, .hint-vars { display: none !important; }
+    .app { display: block; }
+    .main { padding: 0; }
+    .wrap { max-width: none; }
+    .print-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 12px; font-size: 12px; color: var(--ink-2); }
+    .print-head b { font-family: var(--font-display); font-size: 15px; color: var(--ink); }
+    .hero { margin: 0; padding: 14px 16px; background: #eef4f0; border-radius: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    h1 { font-size: 26px; }
+    .lede { font-size: 13px; }
+    .kpis { margin-top: 14px; gap: 8px; }
+    .kpi { padding: 10px 12px; }
+    .kpi .k-value { font-size: 20px; }
+    .kpi.hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kpi.hero .k-value { font-size: 28px; }
+    .story { margin-top: 14px; padding: 12px 16px; }
+    .story p { font-size: 13px; }
+    section.block { margin-top: 18px; break-inside: avoid; }
+    section.block h2 { font-size: 16px; }
+    .card, .fam, .kpi, .inc .it { break-inside: avoid; }
+    .faq details { break-inside: avoid; }
+    .faq details:not([open]) .a { display: block; }
+    .faq summary::after { display: none; }
+    .tablewrap { border: 0; overflow: visible; }
+    table { min-width: 0; font-size: 10.5px; }
+    th, td { padding: 4px 6px; }
+    .chart text { font-size: 11px; }
+    .mosaic { display: none; }
+    .fill, .why-n, .st, .pill, tr.pay td, .contact { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pagebreak { break-before: page; }
+    a { color: inherit; text-decoration: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <aside class="side noprint" id="variabili" aria-label="Variabili del modello">
+    <div class="brand"><div class="logo">J@M</div><div><div class="t">Piano Fotovoltaico</div><div class="s">strumento per la rete commerciale</div></div></div>
+    <div class="side-head"><h2>Variabili</h2><span style="display:flex;gap:6px"><button class="chip ghost" id="btnShare" type="button">Copia link</button><button class="chip ghost" id="btnReset" type="button">Nuovo</button></span></div>
+    <p class="side-sub">Compila la scheda con i dati della bolletta e del preventivo: tutta la pagina si ricalcola. Le modifiche restano su questo dispositivo e finiscono nel link da mandare al cliente.</p>
+    <div id="groups"></div>
+  </aside>
+
+  <main class="main">
+    <div class="wrap">
+      <div class="print-head" id="printHead"></div>
+      <div class="topbar">
+        <span class="date" id="dateLine"></span>
+        <span style="display:flex;gap:8px"><button class="btn" type="button" id="btnPdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Scarica PDF</button></span>
+      </div>
+      <header class="hero">
+        <div class="eyebrow" id="eyebrow"></div>
+        <div class="titlebar">
+          <h1 id="title"></h1>
+          <span class="pill" id="pill"></span>
+        </div>
+        <p class="lede" id="lede"></p>
+        <div class="facts" id="facts"></div>
+        <div class="mosaic" id="mosaic" aria-hidden="true"></div>
+      </header>
+
+      <div class="kpis" id="kpis"></div>
+      <div class="story" id="story"></div>
+
+      <section class="block" id="secWhy">
+        <header><h2 id="whyTitle">Perché conviene qui</h2><p class="sub" id="whySub"></p></header>
+        <div class="three" id="why"></div>
+      </section>
+
+      <section class="block" id="secFamily">
+        <header><h2 id="famTitle">Cosa cambia per ogni famiglia</h2><p class="sub" id="famSub"></p></header>
+        <div class="three" id="family"></div>
+      </section>
+
+      <section class="block">
+        <header><h2 id="billTitle">La bolletta, prima e dopo</h2><p class="sub" id="billSub"></p></header>
+        <div class="two">
+          <div class="card">
+            <div class="legend" id="legendBill"></div>
+            <div id="chartBill"></div>
+          </div>
+          <div class="card">
+            <div class="legend" id="legendMonth"></div>
+            <div id="chartMonth"></div>
+            <p class="chartnote" id="monthNote"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <header><h2>Incentivi</h2><p class="sub" id="incSub"></p></header>
+        <div class="inc" id="incList"></div>
+        <details class="noprint" style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;color:var(--muted)">Incentivi non applicabili a questo cliente</summary><div class="inc na-list" id="incNa" style="margin-top:8px"></div></details>
+      </section>
+
+      <section class="block">
+        <header><h2>Quando rientra l'investimento</h2><p class="sub">Soldi spesi e soldi recuperati, anno dopo anno. Quando la linea supera lo zero l'impianto si è ripagato: da lì in poi è guadagno.</p></header>
+        <div class="card">
+          <div class="legend"><span><i class="line" style="border-color:var(--s-save)"></i>Tutto in cassa</span><span><i class="dash" style="border-color:var(--s-pv)"></i>Con finanziamento</span></div>
+          <div id="chartCum"></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <header><h2 id="finTitle">Con il finanziamento</h2><p class="sub" id="finSub"></p></header>
+        <div class="card" id="finCard"></div>
+      </section>
+
+      <section class="block pagebreak">
+        <header><h2>Anno per anno</h2><p class="sub" id="tableSub"></p></header>
+        <div class="tablewrap" id="tableWrap"></div>
+      </section>
+
+      <section class="block">
+        <header><h2>Cosa succede adesso</h2><p class="sub">I passi, in ordine.</p></header>
+        <div class="card"><ol class="steps" id="steps"></ol></div>
+      </section>
+
+      <section class="block">
+        <header><h2>Domande frequenti</h2><p class="sub">Le domande che escono di solito, con le risposte.</p></header>
+        <div class="faq" id="faq"></div>
+      </section>
+
+      <section class="block">
+        <header><h2>Ipotesi e fonti</h2><p class="sub">Da dove vengono i numeri. Le voci "da confermare" sono stime da verificare con l'installatore o il commercialista.</p></header>
+        <div class="card">
+          <div class="assump" id="assump"></div>
+          <div class="sources" id="sources"></div>
+        </div>
+      </section>
+
+      <div class="contact" id="contact"></div>
+      <div class="agentbox noprint" id="agentBox" hidden></div>
+
+      <p class="foot">Modello a scopo di valutazione preliminare. Produzione, risparmio e incentivi sono stime basate sulle ipotesi indicate e vanno confermati con l'offerta definitiva dell'installatore, il commercialista del cliente e le regole GSE e fiscali in vigore al momento della domanda.</p>
+    </div>
+  </main>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+(function () {
+  'use strict';
+
+  /* =====================================================================
+     DATI DI BASE
+     ===================================================================== */
+  const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+  const MONTHS_FULL = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+  const CO2_KG_PER_KWH = 0.26;
+
+  // Forma mensile della produzione fotovoltaica per zona (quote della produzione annua)
+  const PV_SHAPE = {
+    nord:   [6630, 7558, 11138, 12729, 14983, 15646, 16441, 14717, 11801, 8884, 6497, 5569],
+    centro: [4.9, 6.0, 8.6, 9.9, 11.4, 12.2, 12.9, 11.7, 9.4, 7.2, 5.3, 4.5],
+    sud:    [5.6, 6.4, 8.6, 9.6, 10.9, 11.6, 12.3, 11.5, 9.6, 7.9, 6.0, 5.4]
+  };
+  // Producibilità tipica (kWh per kWp all'anno) per zona, tetto ben esposto
+  const RESA_ZONA = { nord: 1150, centro: 1300, sud: 1450 };
+  // Impianti a terra con struttura fissa ben orientata (tracker: circa +18%)
+  const RESA_TERRA = { nord: 1250, centro: 1450, sud: 1600 };
+  const FERX_BASE = 77, FERX_BONUS = { nord: 10, centro: 0, sud: 0 };
+  // Alba e tramonto (ora locale, media del mese) per il calcolo dell'autoconsumo
+  const SOLE = { nord: [[8.0,17.1],[7.4,17.8],[6.9,18.9],[6.7,20.2],[6.0,20.8],[5.6,21.2],[5.8,21.0],[6.4,20.3],[7.0,19.4],[7.6,18.5],[7.3,16.9],[7.9,16.7]],
+                 centro: [[7.6,17.0],[7.2,17.7],[6.7,18.6],[6.5,19.9],[6.0,20.4],[5.7,20.8],[5.9,20.6],[6.4,20.0],[6.9,19.2],[7.4,18.4],[7.1,16.9],[7.6,16.7]],
+                 sud:    [[7.2,16.9],[6.9,17.5],[6.5,18.4],[6.3,19.6],[5.9,20.0],[5.7,20.4],[5.9,20.3],[6.3,19.8],[6.7,19.1],[7.1,18.3],[6.9,16.9],[7.2,16.7]] };
+
+  // Profili di consumo mensile (quote relative, vengono normalizzate)
+  const PROFILI = {
+    condominio_pdc: { label: 'Condominio con pompa di calore centralizzata', shape: [39682, 31157, 28393, 17451, 19685, 29418, 30774, 25671, 19642, 16026, 28746, 34294], fasce: [0.335, 0.277, 0.388] },
+    condominio_std: { label: 'Condominio classico (luci, ascensori, autoclave)', shape: [1.08, 1.0, 0.98, 0.95, 0.95, 0.98, 1.02, 0.95, 0.95, 1.0, 1.05, 1.09], fasce: [0.30, 0.28, 0.42] },
+    casa: { label: 'Abitazione', shape: [1.15, 1.05, 0.95, 0.85, 0.85, 0.95, 1.1, 1.05, 0.9, 0.95, 1.05, 1.15], fasce: [0.28, 0.30, 0.42] },
+    casa_pdc: { label: 'Abitazione con pompa di calore', shape: [1.5, 1.3, 1.0, 0.7, 0.6, 0.8, 1.0, 0.95, 0.65, 0.8, 1.2, 1.5], fasce: [0.34, 0.30, 0.36] },
+    ufficio: { label: 'Ufficio / studio / negozio', shape: [1.05, 1.0, 0.95, 0.9, 0.95, 1.1, 1.2, 0.8, 1.0, 0.95, 1.0, 1.1], fasce: [0.62, 0.24, 0.14] },
+    capannone: { label: 'Produzione / capannone (chiuso ad agosto)', shape: [1.0, 1.0, 1.05, 1.0, 1.05, 1.1, 1.1, 0.55, 1.05, 1.05, 1.0, 0.9], fasce: [0.58, 0.24, 0.18] },
+    continuo: { label: 'Attività continua 7 giorni su 7', shape: [1.05, 1.0, 1.0, 0.95, 1.0, 1.05, 1.1, 1.05, 1.0, 0.95, 1.0, 1.05], fasce: [0.36, 0.26, 0.38] }
+  };
+
+  /* =====================================================================
+     DEFAULT E PRESET PER TIPO DI CLIENTE
+     ===================================================================== */
+  const DEFAULTS = {
+    // scheda cliente
+    nome: '', tipo: 'condominio', zona: 'nord', localita: '', consulente: '', telefono: '', email: '', installatore: 'SiPro Energy', preventivo: '',
+    // impianto
+    kwp: 30, costo: 42000, extra: 1500, iva: 10, ivaRec: 0, resa: 1150, degrado: 0.4, om: 420, orizzonte: 25, batteria: 0, costoBatteria: 0,
+    // consumi
+    consumo: 120000, f1: 33, f2: 28, f3: 39, spesa: 34000, fissa: 3000, rincaro: 2, aumento: 0, profilo: 'condominio_pdc', autoMode: 'calc', autoconsumo: 85,
+    // eccesso
+    vendita: 0.08, auc: 1, condivisa: 80, premio: 0.12, restituzione: 0.009,
+    // incentivi
+    detrazione: 36, quotaPrima: 60, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0,
+    // pagamento
+    pagamento: 'finanziamento', acconto: 0, tasso: 5.9, durata: 60, istruttoria: 250, imposta: 0.25, incasso: 2.75, attualizzazione: 5,
+    // condominio
+    unita: 30,
+    // impianto a terra (vendita di energia)
+    tracker: 0, disponibilita: 98, modVendita: 'ferx', ferx: 87, prezzoMercato: 95, rincaroMercato: 1, ppa: 70, durataPPA: 10, omKwp: 12, assKwp: 3, ettari: 1.6, affittoHa: 2500, altriCosti: 6000, inflazione: 2, aliquotaSpv: 27.9, anniAmmTerra: 11, istruttoriaPct: 1,
+    // agente
+    provv: 6
+  };
+  const PRESET_TIPO = {
+    casa: { kwp: 4, costo: 7200, extra: 200, iva: 10, ivaRec: 0, om: 80, batteria: 0, costoBatteria: 0, consumo: 3800, f1: 25, f2: 30, f3: 45, spesa: 1100, fissa: 200, profilo: 'casa', auc: 0, condivisa: 0, detrazione: 50, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'cassa', durata: 60 },
+    condominio: { kwp: 30, costo: 42000, extra: 1500, iva: 10, ivaRec: 0, om: 420, batteria: 0, costoBatteria: 0, consumo: 120000, f1: 33, f2: 28, f3: 39, spesa: 34000, fissa: 3000, profilo: 'condominio_pdc', auc: 1, condivisa: 80, detrazione: 36, quotaPrima: 60, unita: 30, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60 },
+    terra: { kwp: 1000, costo: 750000, extra: 80000, iva: 22, ivaRec: 1, om: 0, batteria: 0, costoBatteria: 0, resa: 1250, degrado: 0.5, orizzonte: 25, profilo: 'continuo', auc: 0, condivisa: 0, detrazione: 0, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', acconto: 40, tasso: 4.5, durata: 216, istruttoria: 0, imposta: 0, incasso: 0, modVendita: 'ferx', ferx: 87, tracker: 0 },
+    azienda: { kwp: 60, costo: 72000, extra: 2500, iva: 22, ivaRec: 1, om: 750, batteria: 0, costoBatteria: 0, consumo: 180000, f1: 58, f2: 24, f3: 18, spesa: 45000, fissa: 4200, profilo: 'capannone', auc: 0, condivisa: 0, detrazione: 0, unita: 1, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 1, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60 }
+  };
+  const SCENARI = {
+    prudente: { rincaro: 0, vendita: 0.05 },
+    atteso: { rincaro: 2, vendita: 0.08 },
+    ottimista: { rincaro: 3.5, vendita: 0.11 }
+  };
+  const TIPO_LABEL = { casa: 'Abitazione', condominio: 'Condominio', azienda: 'Azienda', terra: 'Impianto a terra' };
+
+  /* =====================================================================
+     CAMPI DEL PANNELLO
+     ===================================================================== */
+  const isCond = s => s.tipo === 'condominio';
+  const isCasa = s => s.tipo === 'casa';
+  const isAz = s => s.tipo === 'azienda';
+  const isTerra = s => s.tipo === 'terra';
+  const notTerra = s => s.tipo !== 'terra';
+  const fin = s => s.pagamento === 'finanziamento';
+  function ferxTariffa(s) { return FERX_BASE + FERX_BONUS[s.zona]; }
+
+  const GROUPS = [
+    { title: 'Cliente', fields: [
+      { key: 'nome', type: 'text', label: 'Nome cliente', placeholder: 'es. Condominio Via Roma 10' },
+      { key: 'tipo', type: 'seg', label: 'Tipo di cliente', options: [['casa', 'Casa'], ['condominio', 'Condominio'], ['azienda', 'Azienda'], ['terra', 'A terra']], onSet: s => { Object.assign(s, PRESET_TIPO[s.tipo]); if (s.tipo === 'terra') { s.resa = RESA_TERRA[s.zona] * (s.tracker ? 1.18 : 1); s.ferx = ferxTariffa(s); } else { s.resa = RESA_ZONA[s.zona]; } } },
+      { key: 'localita', type: 'text', label: 'Località', placeholder: 'es. Milano (MI)' },
+      { key: 'zona', type: 'seg', label: 'Zona', options: [['nord', 'Nord'], ['centro', 'Centro'], ['sud', 'Sud e isole']], onSet: s => { s.resa = (s.tipo === 'terra' ? RESA_TERRA[s.zona] * (s.tracker ? 1.18 : 1) : RESA_ZONA[s.zona]); s.premio = s.zona === 'nord' ? 0.13 : s.zona === 'centro' ? 0.124 : 0.12; s.ferx = ferxTariffa(s); }, hint: 'Regola la produzione e le tariffe GSE.' },
+      { key: 'installatore', type: 'text', label: 'Installatore', placeholder: 'es. SiPro Energy' },
+      { key: 'preventivo', type: 'text', label: 'Riferimento preventivo', placeholder: 'es. n. FTV-2600473a del 11/09/2026' },
+      { key: 'consulente', type: 'text', label: 'Consulente', placeholder: 'nome e cognome' },
+      { key: 'telefono', type: 'text', label: 'Telefono consulente', placeholder: '3xx xxx xxxx' },
+      { key: 'email', type: 'text', label: 'Email consulente', placeholder: 'nome@dominio.it' }
+    ]},
+    { title: 'Impianto', fields: [
+      { key: 'kwp', label: 'Potenza impianto', unit: 'kWp', min: 1, max: 20000, step: 0.5, slider: true, derived: s => isTerra(s) ? fmtDec(s.kwp / 1000, 2) + ' MWp · ' + fmtInt(s.kwp * 1000 / 600) + ' moduli da 600 W' : fmtInt(s.kwp * 1000 / 460) + ' moduli da 460 W' },
+      { key: 'tracker', type: 'check', label: 'Inseguitori solari (tracker)', showIf: isTerra, onSet: s => { s.resa = RESA_TERRA[s.zona] * (s.tracker ? 1.18 : 1); s.costo = Math.round(s.costo * (s.tracker ? 1.10 : 1 / 1.10)); }, hint: 'Pannelli che seguono il sole: circa +18% di produzione e +10% di costo.' },
+      { key: 'costo', label: 'Costo chiavi in mano', unit: '€', min: 1000, max: 1500000, step: 100, derived: s => fmtEur(s.costo / s.kwp) + '/kWp', hint: 'IVA esclusa, dal preventivo.' },
+      { key: 'extra', label: 'Costi esclusi dal preventivo', unit: '€', min: 0, max: 2000000, step: 100, hint: 'Pratiche, meter, verifica statica, sollevamento, allaccio. IVA esclusa.', showIf: notTerra },
+      { key: 'extra', alias: 'extraTerra', label: 'Sviluppo, autorizzazioni e connessione', unit: '€', min: 0, max: 2000000, step: 1000, hint: 'Progettazione, PAS o autorizzazione unica, preventivo di connessione (STMG) e cabina di consegna in media tensione, terreno se acquistato. IVA esclusa.', showIf: isTerra },
+      { key: 'batteria', label: 'Batteria di accumulo', unit: 'kWh', min: 0, max: 500, step: 0.5, showIf: notTerra, hint: 'Zero se non prevista. Alza l’autoconsumo spostando l’eccesso di giorno alla sera. Dopo 10–12 anni va sostituita: il modello lo conteggia.' },
+      { key: 'costoBatteria', label: 'Costo batteria', unit: '€', min: 0, max: 300000, step: 100, showIf: s => s.batteria > 0, hint: 'IVA esclusa.' },
+      { key: 'iva', label: 'IVA', unit: '%', min: 0, max: 22, step: 1, hint: 'Case e condomini 10%. Aziende 22%.', showIf: notTerra },
+      { key: 'ivaRec', type: 'check', label: 'IVA recuperabile (azienda con partita IVA)', showIf: isAz, hint: 'Se l’azienda scarica l’IVA, i conti sono tutti al netto di IVA.' },
+      { key: 'resa', label: 'Producibilità', unit: 'kWh/kWp', min: 800, max: 2000, step: 5, slider: true, hint: 'Quanti kWh produce ogni kWp in un anno. Se l’installatore la indica nel preventivo, usa quella.' },
+      { key: 'disponibilita', label: 'Disponibilità impianto', unit: '%', min: 90, max: 100, step: 0.5, showIf: isTerra, hint: 'Ore in cui l’impianto funziona davvero: fermi, guasti, limitazioni di rete.' },
+      { key: 'degrado', label: 'Calo di resa annuo', unit: '%', min: 0, max: 1.5, step: 0.05 },
+      { key: 'om', label: 'Manutenzione e assicurazione', unit: '€/anno', min: 0, max: 20000, step: 10, hint: 'Indicativamente l’1% del costo impianto. Da confermare con l’installatore.', warn: true, showIf: notTerra },
+      { key: 'orizzonte', label: 'Anni considerati', unit: 'anni', min: 10, max: 30, step: 1 }
+    ]},
+    { title: 'Consumi e bolletta', showIf: notTerra, fields: [
+      { key: 'consumo', label: 'Consumo annuo', unit: 'kWh', min: 500, max: 5000000, step: 100, hint: 'Dalla bolletta: "consumo annuo".' },
+      { key: 'f1', label: 'Fascia F1 (feriali 8–19)', unit: '%', min: 0, max: 100, step: 1, derived: s => fmtInt(s.consumo * s.f1 / 100) + ' kWh' },
+      { key: 'f2', label: 'Fascia F2 (sere e sabato)', unit: '%', min: 0, max: 100, step: 1, derived: s => fmtInt(s.consumo * s.f2 / 100) + ' kWh' },
+      { key: 'f3', label: 'Fascia F3 (notti e festivi)', unit: '%', min: 0, max: 100, step: 1, derived: s => fmtInt(s.consumo * s.f3 / 100) + ' kWh', hint: 'Le tre fasce devono fare 100. Le trovi in bolletta nel riepilogo consumi.' },
+      { key: 'spesa', label: 'Spesa annua', unit: '€', min: 100, max: 2000000, step: 50, hint: 'IVA esclusa. In bolletta: "spesa annua" o somma delle ultime 12 fatture.' },
+      { key: 'fissa', label: 'di cui quote fisse', unit: '€', min: 0, max: 200000, step: 10, derived: s => 'energia ' + fmtDec(prezzoEvitabile(s), 3) + ' €/kWh', hint: 'Quota fissa e quota potenza: si pagano comunque, il fotovoltaico non le tocca.' },
+      { key: 'profilo', type: 'select', label: 'Profilo di consumo', options: Object.keys(PROFILI).map(k => [k, PROFILI[k].label]), hint: 'Come si distribuisce il consumo nei mesi. Serve per il calcolo dell’autoconsumo.' },
+      { key: 'aumento', label: 'Aumento consumi previsto', unit: '%', min: 0, max: 200, step: 5, hint: 'Pompa di calore, auto elettrica, nuovi macchinari: il consumo futuro su cui si dimensiona l’impianto.' },
+      { key: 'rincaro', label: 'Rincaro energia annuo', unit: '%', min: 0, max: 6, step: 0.5, slider: true },
+      { key: 'autoMode', type: 'seg', label: 'Energia consumata sul posto', options: [['calc', 'Calcolata'], ['manuale', 'Manuale']], hint: 'Calcolata: incrocia fasce, profilo mensile e ore di sole. Manuale: la imposti tu.' },
+      { key: 'autoconsumo', label: 'Autoconsumo', unit: '%', min: 10, max: 100, step: 1, slider: true, showIf: s => s.autoMode === 'manuale' }
+    ]},
+    { title: 'Energia in eccesso e condivisa', showIf: notTerra, fields: [
+      { key: 'vendita', label: 'Vendita eccesso in rete', unit: '€/kWh', min: 0, max: 0.2, step: 0.005, hint: 'Ritiro dedicato GSE: prezzo zonale orario (0,10–0,13 €/kWh nel 2026) o minimo garantito 0,0475. Lo scambio sul posto è chiuso ai nuovi impianti.' },
+      { key: 'auc', type: 'check', label: 'Gruppo di autoconsumo collettivo o CER', hint: 'Condomini: l’eccesso delle parti comuni viene condiviso con gli appartamenti. Aziende e case: solo se aderiscono a una comunità energetica.' },
+      { key: 'condivisa', label: 'Eccesso assorbito dai membri', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => !!s.auc },
+      { key: 'premio', label: 'Tariffa premio GSE', unit: '€/kWh', min: 0, max: 0.15, step: 0.001, showIf: s => !!s.auc, hint: 'Per 20 anni. Fino a 0,12 €/kWh sotto i 200 kW, +0,010 al Nord e +0,004 al Centro.' },
+      { key: 'restituzione', label: 'Restituzione ARERA', unit: '€/kWh', min: 0, max: 0.02, step: 0.001, showIf: s => !!s.auc }
+    ]},
+    { title: 'Incentivi', showIf: notTerra, fields: [
+      { key: 'detrazione', type: 'seg', label: 'Detrazione fiscale (bonus casa)', options: [[50, '50% prima casa'], [36, '36% altri'], [0, 'Nessuna']], showIf: isCasa, hint: 'In 10 rate annuali, tetto 96.000 € per unità.' },
+      { key: 'quotaPrima', label: 'Unità con abitazione principale', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: isCond, derived: s => 'detrazione media ' + fmtDec(detrazioneCond(s), 1) + '%', hint: 'Chi abita nel palazzo scarica il 50%, gli altri (seconde case, affitti) il 36%. La detrazione torna alle famiglie, non in cassa condominiale.' },
+      { key: 'reddito', type: 'check', label: 'Reddito energetico (ISEE ≤ 15.000 €)', showIf: isCasa, hint: 'Impianto 2–6 kW pagato dal GSE: 2.000 € + 1.500 €/kW, max 11.000 €. Bando 2026 non ancora riaperto: da verificare.' },
+      { key: 'iper', type: 'check', label: 'Iperammortamento 2026', showIf: isAz, hint: 'Maggiorazione del costo deducibile per impianti in autoconsumo (L. 199/2025). Moduli iscritti al registro ENEA cat. B o C, impianto entro il 105% del fabbisogno.' },
+      { key: 'iperMagg', label: 'Maggiorazione', unit: '%', min: 0, max: 220, step: 10, showIf: s => isAz(s) && !!s.iper, hint: '180% fino a 2,5 milioni; 100% da 2,5 a 10; 50% da 10 a 20.' },
+      { key: 'aliquota', label: 'Aliquota fiscale', unit: '%', min: 0, max: 50, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'IRES 24% per le società di capitali; per ditte e società di persone l’aliquota IRPEF del titolare.' },
+      { key: 'anniAmm', label: 'Anni di ammortamento', unit: 'anni', min: 5, max: 20, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'Il risparmio fiscale si spalma su questi anni.' },
+      { key: 'sabatini', type: 'check', label: 'Nuova Sabatini green (PMI)', showIf: isAz, hint: 'Il Ministero rimborsa gli interessi di un finanziamento a 5 anni al 3,575%: circa il 10% dell’investimento. Serve un finanziamento bancario o leasing.' },
+      { key: 'fondoPerduto', label: 'Contributo a fondo perduto', unit: '%', min: 0, max: 60, step: 1, showIf: s => !isCasa(s), hint: 'Bandi regionali (Lombardia "Linea Impresa Efficiente" fino al 45%), ZES Unica al Sud (fino al 60%), PNRR CER nei comuni sotto i 50.000 abitanti (40%). Zero se non c’è un bando aperto.' },
+      { key: 'contoTermico', label: 'Conto Termico 3.0', unit: '%', min: 0, max: 65, step: 1, showIf: isAz, hint: 'Solo per edifici del terziario e solo se il fotovoltaico è abbinato alla sostituzione della caldaia con pompa di calore. Zero se non ricorre.' }
+    ]},
+    { title: 'Vendita dell’energia', showIf: isTerra, fields: [
+      { key: 'modVendita', type: 'seg', label: 'Come si vende l’energia', options: [['ferx', 'FER-X'], ['merchant', 'Mercato'], ['ppa', 'PPA']], hint: 'FER-X: tariffa GSE fissa per 20 anni (fino a 1 MW senza asta). Mercato: prezzo orario zonale. PPA: contratto a prezzo fisso con un acquirente.' },
+      { key: 'ferx', label: 'Tariffa FER-X', unit: '€/MWh', min: 0, max: 200, step: 1, showIf: s => s.modVendita === 'ferx', hint: '77 €/MWh base (ARERA 339/2025) + 10 al Nord. Contratto per differenza a due vie per 20 anni: il ricavo è di fatto fisso. Sopra 1 MW si passa dalle aste.' },
+      { key: 'prezzoMercato', label: 'Prezzo di cattura del solare', unit: '€/MWh', min: 0, max: 300, step: 1, slider: true, hint: 'Quanto vale l’energia nelle ore in cui il sole produce: a giugno 2026 circa 108 €/MWh contro un PUN di 132. Minimo garantito GSE 2026: 47,5.' },
+      { key: 'rincaroMercato', label: 'Variazione annua del prezzo', unit: '%', min: -5, max: 6, step: 0.5, slider: true, hint: 'Vale per gli anni a mercato. Prudente: 0 o negativo, perché più solare c’è in rete e più il prezzo di giorno scende.' },
+      { key: 'ppa', label: 'Prezzo PPA', unit: '€/MWh', min: 0, max: 200, step: 1, showIf: s => s.modVendita === 'ppa' },
+      { key: 'durataPPA', label: 'Durata PPA', unit: 'anni', min: 1, max: 25, step: 1, showIf: s => s.modVendita === 'ppa', hint: 'Dopo, l’energia va a mercato.' }
+    ]},
+    { title: 'Costi di gestione', showIf: isTerra, fields: [
+      { key: 'omKwp', label: 'O&M', unit: '€/kWp/anno', min: 0, max: 60, step: 0.5, derived: s => fmtEur(s.omKwp * s.kwp) + '/anno', hint: 'Manutenzione, monitoraggio, pulizia, taglio erba, pronto intervento: 10–20 €/kWp per impianti da 1 MW.' },
+      { key: 'assKwp', label: 'Assicurazione', unit: '€/kWp/anno', min: 0, max: 20, step: 0.5, derived: s => fmtEur(s.assKwp * s.kwp) + '/anno' },
+      { key: 'ettari', label: 'Terreno occupato', unit: 'ha', min: 0, max: 100, step: 0.1, hint: 'Circa 1,5–2 ettari per MW con struttura fissa.' },
+      { key: 'affittoHa', label: 'Affitto terreno', unit: '€/ha/anno', min: 0, max: 20000, step: 100, derived: s => fmtEur(s.ettari * s.affittoHa) + '/anno', hint: 'Zero se il terreno è di proprietà (metti il prezzo d’acquisto in "sviluppo").' },
+      { key: 'altriCosti', label: 'Altri costi fissi', unit: '€/anno', min: 0, max: 200000, step: 100, hint: 'IMU, gestione societaria e contabile, oneri GSE e di rete, vigilanza.' },
+      { key: 'inflazione', label: 'Inflazione dei costi', unit: '%', min: 0, max: 6, step: 0.5 },
+      { key: 'aliquotaSpv', label: 'Tasse sugli utili', unit: '%', min: 0, max: 50, step: 0.1, hint: 'IRES 24% + IRAP 3,9% per una società di capitali.' },
+      { key: 'anniAmmTerra', label: 'Anni di ammortamento', unit: 'anni', min: 5, max: 25, step: 1, hint: 'Ammortamento fiscale dell’impianto (coefficiente 9% ≈ 11 anni).' }
+    ]},
+    { title: 'Pagamento', fields: [
+      { key: 'pagamento', type: 'seg', label: 'Come paga il cliente', options: [['finanziamento', 'Finanziamento'], ['cassa', 'Tutto in cassa']], showIf: notTerra },
+      { key: 'pagamento', alias: 'pagamentoTerra', type: 'seg', label: 'Struttura finanziaria', options: [['finanziamento', 'Debito + capitale'], ['cassa', 'Solo capitale proprio']], showIf: isTerra },
+      { key: 'acconto', label: 'Acconto in cassa', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => fin(s) && notTerra(s), derived: s => fmtEur(investimentoTotale(s) * s.acconto / 100) + ' subito' },
+      { key: 'acconto', alias: 'accontoTerra', label: 'Capitale proprio (equity)', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => fin(s) && isTerra(s), derived: s => fmtEur(investimentoTotale(s) * s.acconto / 100) + ' di equity', hint: 'Il resto lo copre la banca. Nei project financing tipicamente 20–35%.' },
+      { key: 'tasso', label: 'Tasso annuo (TAN)', unit: '%', min: 0, max: 15, step: 0.05, showIf: fin, hint: 'Indicativo: chirografario fisso 5,5–6,5%, variabile Euribor 3M + 3%; project financing 4–5,5%.' },
+      { key: 'durata', label: 'Durata', unit: 'mesi', min: 12, max: 300, step: 12, showIf: fin, derived: s => fmtInt(s.durata / 12) + ' anni' },
+      { key: 'istruttoria', label: 'Spese di istruttoria', unit: '€', min: 0, max: 10000, step: 50, showIf: s => fin(s) && notTerra(s) },
+      { key: 'istruttoriaPct', label: 'Costi di strutturazione', unit: '%', min: 0, max: 5, step: 0.1, showIf: s => fin(s) && isTerra(s), hint: 'Fee bancarie e consulenze, in percentuale del debito.' },
+      { key: 'imposta', label: 'Imposta sostitutiva', unit: '%', min: 0, max: 2, step: 0.05, showIf: s => fin(s) && notTerra(s) },
+      { key: 'incasso', label: 'Spese incasso rata', unit: '€', min: 0, max: 10, step: 0.25, showIf: s => fin(s) && notTerra(s) },
+      { key: 'attualizzazione', label: 'Tasso di attualizzazione', unit: '%', min: 0, max: 15, step: 0.5, showIf: s => isAz(s) || isTerra(s), hint: 'Per il VAN: quanto vale oggi un euro guadagnato tra dieci anni.' }
+    ]},
+    { title: 'Condominio', showIf: isCond, fields: [
+      { key: 'unita', label: 'Famiglie (unità abitative)', unit: 'n.', min: 2, max: 500, step: 1, hint: 'Box esclusi. Serve per la media per famiglia.' }
+    ]},
+    { title: 'Area agente', agent: true, fields: [
+      { key: 'provv', label: 'Provvigione', unit: '%', min: 0, max: 20, step: 0.5, derived: s => fmtEur((s.costo + s.extra + s.costoBatteria) * s.provv / 100), hint: 'Sull’imponibile. Visibile solo a te: non finisce né nel PDF né nel link copiato.' }
+    ]}
+  ];
+
+  /* =====================================================================
+     STATO
+     ===================================================================== */
+  const STORE = 'jam-piano-fv-v1';
+  const AGENT = /[?&]agente/.test(location.search);
+  const TEXT_KEYS = ['nome', 'localita', 'consulente', 'telefono', 'email', 'installatore', 'preventivo'];
+  let state = loadState();
+
+  function loadState() {
+    let s = Object.assign({}, DEFAULTS);
+    try {
+      const h = location.hash.match(/^#s=(.+)$/);
+      if (h) return Object.assign(s, JSON.parse(decodeURIComponent(h[1])));
+    } catch (e) {}
+    try { const raw = localStorage.getItem(STORE); if (raw) Object.assign(s, JSON.parse(raw)); } catch (e) {}
+    return s;
+  }
+  function stateDiff() {
+    const diff = {};
+    Object.keys(DEFAULTS).forEach(k => { if (k !== 'provv' && state[k] !== DEFAULTS[k]) diff[k] = state[k]; });
+    return diff;
+  }
+  function saveState() {
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+    try {
+      const diff = stateDiff();
+      const h = Object.keys(diff).length ? '#s=' + encodeURIComponent(JSON.stringify(diff)) : '';
+      history.replaceState(null, '', location.pathname + location.search + h);
+    } catch (e) {}
+  }
+  function shareUrl() {
+    const diff = stateDiff();
+    return location.origin + location.pathname + (Object.keys(diff).length ? '#s=' + encodeURIComponent(JSON.stringify(diff)) : '');
+  }
+
+  /* =====================================================================
+     FORMATI
+     ===================================================================== */
+  const nfInt = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 });
+  function fmtInt(n) { return nfInt.format(Math.round(n)); }
+  function fmtEur(n) { return nfInt.format(Math.round(n)) + ' €'; }
+  function fmtDec(n, d) { return new Intl.NumberFormat('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d }).format(n); }
+  function fmtPct(n, d) { return fmtDec(n, d == null ? 1 : d) + '%'; }
+  function fmtYears(y) {
+    if (y == null) return 'oltre l’orizzonte';
+    const anni = Math.floor(y), mesi = Math.round((y - anni) * 12);
+    if (mesi === 12) return (anni + 1) + ' anni';
+    if (anni === 0) return mesi + ' mesi';
+    return anni + (anni === 1 ? ' anno' : ' anni') + (mesi ? ' e ' + mesi + (mesi === 1 ? ' mese' : ' mesi') : '');
+  }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  const oggi = new Date();
+  const dataOggi = oggi.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  /* =====================================================================
+     MODELLO
+     ===================================================================== */
+  function prezzoEvitabile(s) { return Math.max(0, (s.spesa - s.fissa) / Math.max(1, s.consumo)); }
+  function ivaFattore(s) { return ((isAz(s) && s.ivaRec) || isTerra(s)) ? 1 : 1 + s.iva / 100; }
+  function investimentoNetto(s) { return s.costo + s.extra + (s.batteria > 0 ? s.costoBatteria : 0); }
+  function investimentoTotale(s) { return investimentoNetto(s) * ivaFattore(s); }
+  function detrazioneCond(s) { return 50 * s.quotaPrima / 100 + 36 * (1 - s.quotaPrima / 100); }
+  function detrazioneRate(s) { return isCasa(s) ? (s.reddito ? 0 : s.detrazione) : isCond(s) ? detrazioneCond(s) : 0; }
+  function consumoFuturo(s) { return s.consumo * (1 + s.aumento / 100); }
+  function prodShape(s) { const sh = PV_SHAPE[s.zona]; const tot = sh.reduce((a, b) => a + b, 0); return sh.map(v => v / tot); }
+  function consShape(s) { const sh = PROFILI[s.profilo].shape; const tot = sh.reduce((a, b) => a + b, 0); return sh.map(v => v / tot); }
+
+  function rataMensile(P, tassoAnnuo, mesi) {
+    if (P <= 0 || mesi <= 0) return 0;
+    const r = tassoAnnuo / 100 / 12;
+    if (r === 0) return P / mesi;
+    return P * r / (1 - Math.pow(1 + r, -mesi));
+  }
+  function irr(cf) {
+    const npv = r => cf.reduce((a, c, t) => a + c / Math.pow(1 + r, t), 0);
+    let lo = -0.9, hi = 5;
+    if (npv(lo) < 0 || npv(hi) > 0) return null;
+    for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (npv(mid) > 0) lo = mid; else hi = mid; }
+    return (lo + hi) / 2;
+  }
+  function van(cf, rate) { return cf.reduce((a, c, t) => a + c / Math.pow(1 + rate, t), 0); }
+
+  // Fascia oraria: g 0-4 lun-ven, 5 sabato, 6 domenica
+  function fascia(g, h) {
+    if (g === 6) return 2;
+    if (g === 5) return (h >= 7 && h < 23) ? 1 : 2;
+    if (h >= 8 && h < 19) return 0;
+    if ((h >= 7 && h < 8) || (h >= 19 && h < 23)) return 1;
+    return 2;
+  }
+  const ANNO_RIF = 2026;
+  const CAL = (function () {
+    // per ogni mese: giorni e ore per fascia
+    const out = [];
+    for (let m = 0; m < 12; m++) {
+      const nd = new Date(ANNO_RIF, m + 1, 0).getDate();
+      const ore = [0, 0, 0], giorni = [];
+      for (let d = 1; d <= nd; d++) {
+        const g = (new Date(ANNO_RIF, m, d).getDay() + 6) % 7;
+        giorni.push(g);
+        for (let h = 0; h < 24; h++) ore[fascia(g, h)]++;
+      }
+      out.push({ nd, ore, giorni });
+    }
+    return out;
+  })();
+  const STEP = 0.25;
+  function profiloSole(s, m) {
+    const a = SOLE[s.zona][m][0], t = SOLE[s.zona][m][1];
+    const pts = [];
+    for (let x = 0; x < 24; x += STEP) pts.push((x >= a && x <= t) ? Math.max(0, Math.sin(Math.PI * (x - a) / (t - a))) : 0);
+    const sum = pts.reduce((p, q) => p + q, 0);
+    return pts.map(v => v / sum);
+  }
+  // Autoconsumo diretto (senza batteria): confronto ora per ora tra produzione e carico medio di fascia, mese per mese,
+  // con giornate serene e nuvolose (0,4x / 1x / 1,4x della produzione media)
+  function calcolaAutoconsumo(s, prodAnno, consAnno) {
+    const ps = prodShape(s), cs = consShape(s);
+    const share = [s.f1, s.f2, s.f3].map(v => v / 100);
+    let auto = 0, prod = 0, surplusMesi = [];
+    for (let m = 0; m < 12; m++) {
+      const P = prodAnno * ps[m], C = consAnno * cs[m];
+      const cal = CAL[m], Pday = P / cal.nd;
+      const L = [0, 1, 2].map(f => C * share[f] / Math.max(1, cal.ore[f]));
+      const prof = profiloSole(s, m);
+      let am = 0;
+      cal.giorni.forEach(g => {
+        [[0.4, 0.25], [1.0, 0.5], [1.4, 0.25]].forEach(kw => {
+          prof.forEach((v, i) => {
+            const f = fascia(g, Math.floor(i * STEP));
+            am += kw[1] * Math.min(v * Pday * kw[0] / STEP, L[f]) * STEP;
+          });
+        });
+      });
+      auto += am; prod += P; surplusMesi.push(P - am);
+    }
+    return { quota: prod > 0 ? auto / prod : 0, surplusMesi };
+  }
+  // La batteria sposta l'eccesso di giorno alla sera: quota aggiuntiva stimata
+  function autoconsumoConBatteria(s, quotaBase, prodAnno, consAnno) {
+    if (s.batteria <= 0) return quotaBase;
+    const surplus = prodAnno * (1 - quotaBase);
+    const utile = s.batteria * 0.9 * 300;                  // kWh/anno che la batteria può spostare
+    const notte = consAnno * (s.f2 + s.f3) / 100;          // consumo fuori dalle ore di sole
+    const extra = Math.min(surplus, utile, notte);
+    return Math.min(1, quotaBase + extra / Math.max(1, prodAnno));
+  }
+
+  function compute(s) { return isTerra(s) ? computeTerra(s) : computeConsumo(s); }
+
+  // Impianto a terra: ricavi dalla vendita dell'energia, costi di gestione, tasse, project financing
+  function computeTerra(s) {
+    const H = Math.round(s.orizzonte);
+    const investNetto = investimentoNetto(s);
+    const invest = investNetto;                      // IVA recuperabile
+    const equity = invest * (fin(s) ? s.acconto / 100 : 1);
+    const debito = invest - equity;
+    const speseBanca = debito > 0 ? debito * s.istruttoriaPct / 100 : 0;
+    const rata = rataMensile(debito, s.tasso, s.durata);
+    const esborsoFin = equity + speseBanca;
+    const prodAnno1 = s.kwp * s.resa * s.disponibilita / 100;
+    const opexAnno1 = (s.omKwp + s.assKwp) * s.kwp + s.ettari * s.affittoHa + s.altriCosti;
+    const rows = [];
+    let cumCassa = -invest, cumFin = -esborsoFin, debitoResiduo = debito;
+    const cfCassa = [-invest], cfFin = [-esborsoFin];
+    let dscrMin = null, primoAnnoNeg = null;
+    for (let t = 1; t <= H; t++) {
+      const prod = prodAnno1 * Math.pow(1 - s.degrado / 100, t - 1);
+      let prezzo;   // euro per MWh
+      if (s.modVendita === 'ferx' && t <= 20) prezzo = s.ferx;
+      else if (s.modVendita === 'ppa' && t <= s.durataPPA) prezzo = s.ppa;
+      else prezzo = s.prezzoMercato * Math.pow(1 + s.rincaroMercato / 100, t - 1);
+      const ricavi = prod / 1000 * prezzo;
+      const opex = opexAnno1 * Math.pow(1 + s.inflazione / 100, t - 1);
+      const ebitda = ricavi - opex;
+      const amm = t <= s.anniAmmTerra ? invest / s.anniAmmTerra : 0;
+      let interessi = 0;
+      const mesiRata = Math.max(0, Math.min(12, s.durata - (t - 1) * 12));
+      for (let k = 0; k < mesiRata; k++) { const i = debitoResiduo * s.tasso / 100 / 12; interessi += i; debitoResiduo = Math.max(0, debitoResiduo - (rata - i)); }
+      const rataAnno = rata * mesiRata;
+      const tasseCassa = Math.max(0, (ebitda - amm) * s.aliquotaSpv / 100);
+      const tasseFin = Math.max(0, (ebitda - amm - interessi) * s.aliquotaSpv / 100);
+      const flussoCassa = ebitda - tasseCassa;
+      const flussoFin = ebitda - tasseFin - rataAnno;
+      const dscr = rataAnno > 0 ? (ebitda - tasseFin) / rataAnno : null;
+      if (dscr != null && (dscrMin == null || dscr < dscrMin)) dscrMin = dscr;
+      if (flussoFin < 0 && primoAnnoNeg == null) primoAnnoNeg = t;
+      cumCassa += flussoCassa; cumFin += flussoFin;
+      cfCassa.push(flussoCassa); cfFin.push(flussoFin);
+      rows.push({ t, prod, prezzo, ricavi, opex, ebitda, amm, interessi, tasseCassa, tasseFin, dscr, risparmio: ricavi, vendita: 0, auc: 0, detr: 0, iper: 0, contributi: 0, incentivi: 0, om: opex, rataAnno, flussoCassa, flussoFin, cumCassa, cumFin, auto: 0, surplus: prod });
+    }
+    const payback = cum => { let prev = cum[0]; if (prev >= 0) return 0; for (let i = 1; i < cum.length; i++) { if (cum[i] >= 0) return (i - 1) + (-prev) / (cum[i] - prev); prev = cum[i]; } return null; };
+    const cumC = [-invest].concat(rows.map(r => r.cumCassa));
+    const cumF = [-esborsoFin].concat(rows.map(r => r.cumFin));
+    const isFin = fin(s);
+    const y1 = rows[0];
+    const r = s.attualizzazione / 100;
+    const prodAtt = rows.reduce((a, x) => a + x.prod / Math.pow(1 + r, x.t), 0);
+    const opexAtt = rows.reduce((a, x) => a + x.opex / Math.pow(1 + r, x.t), 0);
+    const lcoe = prodAtt > 0 ? (invest + opexAtt) / prodAtt * 1000 : 0;   // euro per MWh
+    const avvisi = [];
+    const capexKwp = s.costo / s.kwp;
+    if (capexKwp < 500 || capexKwp > 1400) avvisi.push('Costo di ' + fmtEur(capexKwp) + '/kWp fuori dal range tipico (700–1.200 €/kWp per 1 MW a terra nel 2026): controlla il preventivo.');
+    if (s.kwp > 1000 && s.modVendita === 'ferx') avvisi.push('Sopra 1 MW la tariffa FER-X non è ad accesso diretto: si ottiene partecipando alle aste, con prezzo non garantito. Valuta lo scenario a mercato.');
+    if (s.ettari > 0 && s.ettari < s.kwp / 1000 * 1.2) avvisi.push('Con ' + fmtDec(s.ettari, 1) + ' ettari lo spazio è poco: per ' + fmtDec(s.kwp / 1000, 2) + ' MW servono circa ' + fmtDec(s.kwp / 1000 * 1.6, 1) + ' ettari a struttura fissa.');
+    if (isFin && dscrMin != null && dscrMin < 1.2) avvisi.push('DSCR minimo ' + fmtDec(dscrMin, 2) + ': le banche chiedono di solito almeno 1,20–1,30. Aumenta il capitale proprio o allunga la durata del debito.');
+    avvisi.push('Verifica che il terreno non sia classificato agricolo dal piano urbanistico: dal 2024 i moduli a terra sono vietati in area agricola (Corte Cost. 127/2026), salvo agrivoltaico con pannelli sollevati, aree industriali, cave, discariche e aree idonee.');
+    return {
+      H, invest, investNetto, investDaPagare: invest, acconto: equity, finanziato: debito, speseBanca, esborsoFin, rata, fin: isFin, rows, pEvit: 0, ivaF: 1,
+      consumo: 0, quota: 0, quotaCalc: 0, quotaBase: 0, surplusMesi: [], detrRate: 0, reddito: 0, fondo: 0, sabatini: 0, contoTermico: 0, iperTot: 0, iperAnno: 0,
+      nettoY1Fin: y1.flussoFin,
+      interessi: rata * s.durata - debito,
+      paybackCassa: payback(cumC), paybackFin: payback(cumF), cumC, cumF,
+      guadagno: isFin ? cumF[cumF.length - 1] : cumC[cumC.length - 1],
+      irr: irr(cfCassa), irrEquity: isFin ? irr(cfFin) : irr(cfCassa),
+      van: van(isFin ? cfFin : cfCassa, r),
+      bollettaOggi: 0, bollettaFutura: 0, bollettaDopo: 0,
+      beneficioY1: y1.ricavi, incentiviY1: 0, flussoY1: isFin ? y1.flussoFin : y1.flussoCassa,
+      costoKwhProdotto: lcoe / 1000, lcoe, dscrMin, primoAnnoNeg, opexAnno1, prodAnno1,
+      co2: y1.prod * CO2_KG_PER_KWH / 1000,
+      terra: true, avvisi
+    };
+  }
+
+  function computeConsumo(s) {
+    const H = Math.round(s.orizzonte);
+    const ivaF = ivaFattore(s);
+    const investNetto = investimentoNetto(s);
+    const invest = investNetto * ivaF;
+    const pEvit = prezzoEvitabile(s);
+    const consumo = consumoFuturo(s);
+    const prodAnno1 = s.kwp * s.resa;
+    const ac = calcolaAutoconsumo(s, prodAnno1, consumo);
+    const quotaCalc = ac.quota;
+    const quotaBase = s.autoMode === 'calc' ? quotaCalc : s.autoconsumo / 100;
+    const quota = autoconsumoConBatteria(s, quotaBase, prodAnno1, consumo);
+    const detrRate = detrazioneRate(s);
+    // contributi una tantum
+    const reddito = (isCasa(s) && s.reddito) ? Math.min(11000, 2000 + 1500 * s.kwp) : 0;
+    const fondo = (!isCasa(s) ? investNetto * s.fondoPerduto / 100 : 0);
+    const sabatini = (isAz(s) && s.sabatini) ? investNetto * 0.10 : 0;
+    const contoTermico = isAz(s) ? investNetto * s.contoTermico / 100 : 0;
+    const iperTot = (isAz(s) && s.iper) ? investNetto * s.iperMagg / 100 * s.aliquota / 100 : 0;
+    const iperAnno = iperTot / Math.max(1, s.anniAmm);
+    // finanziamento: calcolato sempre, per il confronto nel grafico
+    const investDaPagare = Math.max(0, invest - reddito);
+    const acconto = investDaPagare * s.acconto / 100;
+    const finanziato = investDaPagare - acconto;
+    const speseBanca = finanziato > 0 ? s.istruttoria + finanziato * s.imposta / 100 : 0;
+    const rataBase = rataMensile(finanziato, s.tasso, s.durata);
+    const rata = rataBase > 0 ? rataBase + s.incasso : 0;
+    const esborsoFin = acconto + speseBanca;
+    const rows = [];
+    let cumCassa = -investDaPagare, cumFin = -esborsoFin;
+    const cfCassa = [-investDaPagare], cfFin = [-esborsoFin];
+    const annoBatt = 12;
+    for (let t = 1; t <= H; t++) {
+      const prod = prodAnno1 * Math.pow(1 - s.degrado / 100, t - 1);
+      const auto = Math.min(prod * quota, consumo);
+      const surplus = prod - auto;
+      const prezzo = pEvit * Math.pow(1 + s.rincaro / 100, t - 1) * ivaF;
+      const risparmio = auto * prezzo;
+      const vendita = surplus * s.vendita;
+      const auc = (s.auc && t <= 20) ? surplus * s.condivisa / 100 * (s.premio + s.restituzione) : 0;
+      const detr = t <= 10 ? invest * detrRate / 100 / 10 : 0;
+      const iper = t <= s.anniAmm ? iperAnno : 0;
+      const contributi = t === 1 ? fondo + sabatini + contoTermico : 0;
+      const incentivi = detr + iper + contributi;
+      let om = s.om * Math.pow(1.02, t - 1);
+      if (s.batteria > 0 && t === annoBatt && H >= annoBatt + 3) om += s.costoBatteria * ivaF * 0.7; // sostituzione batteria, prezzi in calo
+      const mesiRata = Math.max(0, Math.min(12, s.durata - (t - 1) * 12));
+      const rataAnno = rata * mesiRata;
+      const flussoCassa = risparmio + vendita + auc + incentivi - om;
+      const flussoFin = flussoCassa - rataAnno;
+      cumCassa += flussoCassa; cumFin += flussoFin;
+      cfCassa.push(flussoCassa); cfFin.push(flussoFin);
+      rows.push({ t, prod, auto, surplus, risparmio, vendita, auc, detr, iper, contributi, incentivi, om, rataAnno, flussoCassa, flussoFin, cumCassa, cumFin });
+    }
+    const payback = cum => {
+      let prev = cum[0];
+      if (prev >= 0) return 0;
+      for (let i = 1; i < cum.length; i++) { if (cum[i] >= 0) return (i - 1) + (-prev) / (cum[i] - prev); prev = cum[i]; }
+      return null;
+    };
+    const cumC = [-investDaPagare].concat(rows.map(r => r.cumCassa));
+    const cumF = [-esborsoFin].concat(rows.map(r => r.cumFin));
+    const isFin = fin(s);
+    const y1 = rows[0];
+    const prodTot = rows.reduce((a, r) => a + r.prod, 0);
+    const bollettaOggi = s.spesa * ivaF;
+    const bollettaFutura = (s.spesa - s.fissa) * (1 + s.aumento / 100) * ivaF + s.fissa * ivaF;
+    // avvisi
+    const avvisi = [];
+    if (s.f1 + s.f2 + s.f3 !== 100) avvisi.push('Le fasce F1+F2+F3 fanno ' + (s.f1 + s.f2 + s.f3) + '% invece di 100%: correggile, il calcolo dell’autoconsumo ne risente.');
+    if (prodAnno1 > consumo * 1.05 && isAz(s) && s.iper) avvisi.push('L’impianto produce più del 105% del fabbisogno (' + fmtInt(prodAnno1) + ' contro ' + fmtInt(consumo) + ' kWh): oltre questo limite l’iperammortamento non spetta. Riduci la potenza o alza i consumi previsti.');
+    if (prodAnno1 > consumo * 1.3) avvisi.push('L’impianto produce molto più di quanto il cliente consuma: l’eccesso venduto in rete vale poco. Valuta una potenza più bassa.');
+    if (quota < 0.5) avvisi.push('Solo il ' + fmtInt(quota * 100) + '% dell’energia viene consumata sul posto: il rientro si allunga. Una batteria o una potenza minore migliorano il quadro.');
+    if (isCasa(s) && s.reddito && (s.kwp < 2 || s.kwp > 6)) avvisi.push('Il reddito energetico copre impianti da 2 a 6 kW: con ' + fmtDec(s.kwp, 1) + ' kWp non spetta.');
+    if (isCasa(s) && s.reddito && s.detrazione) avvisi.push('Con il reddito energetico non si somma la detrazione fiscale: il piano la esclude.');
+    if (isAz(s) && s.sabatini && !isFin) avvisi.push('La Nuova Sabatini richiede un finanziamento bancario o un leasing: con pagamento in cassa non spetta.');
+    if (isCasa(s) && s.auc) avvisi.push('Per una casa l’energia condivisa vale solo aderendo a una comunità energetica esistente nella stessa cabina primaria.');
+    if (invest * detrRate / 100 > 96000 * (isCond(s) ? s.unita : 1) * detrRate / 100 && detrRate > 0) avvisi.push('La spesa supera il tetto di 96.000 € per unità su cui si calcola la detrazione.');
+    return {
+      H, invest, investNetto, investDaPagare, acconto, finanziato, speseBanca, esborsoFin, rata, fin: isFin, rows, pEvit, ivaF,
+      consumo, quota, quotaCalc, quotaBase, surplusMesi: ac.surplusMesi, detrRate, reddito, fondo, sabatini, contoTermico, iperTot, iperAnno,
+      nettoY1Fin: y1.flussoFin,
+      interessi: rata * s.durata - finanziato,
+      paybackCassa: payback(cumC), paybackFin: payback(cumF), cumC, cumF,
+      guadagno: isFin ? cumF[cumF.length - 1] : cumC[cumC.length - 1],
+      irr: irr(cfCassa),
+      van: van(isFin ? cfFin : cfCassa, s.attualizzazione / 100),
+      bollettaOggi, bollettaFutura,
+      bollettaDopo: bollettaFutura - y1.risparmio,
+      beneficioY1: y1.risparmio + y1.vendita + y1.auc,
+      incentiviY1: y1.incentivi,
+      flussoY1: isFin ? y1.flussoFin : y1.flussoCassa,
+      costoKwhProdotto: investDaPagare / prodTot,
+      co2: y1.prod * CO2_KG_PER_KWH / 1000,
+      avvisi
+    };
+  }
+
+  /* =====================================================================
+     PANNELLO VARIABILI
+     ===================================================================== */
+  const groupsEl = document.getElementById('groups');
+  function buildSidebar() {
+    groupsEl.innerHTML = '';
+    GROUPS.forEach(g => {
+      if (g.agent && !AGENT) return;
+      const d = document.createElement('details'); d.className = 'group' + (g.agent ? ' agent' : ''); d.open = !g.agent; d.dataset.group = g.title;
+      const sm = document.createElement('summary'); sm.textContent = g.title; d.appendChild(sm);
+      const wrap = document.createElement('div'); wrap.className = 'fields';
+      g.fields.forEach(f => wrap.appendChild(buildField(f)));
+      d.appendChild(wrap); groupsEl.appendChild(d);
+    });
+  }
+  function buildField(f) {
+    const el = document.createElement('div'); el.className = 'field'; el.dataset.key = f.alias || f.key;
+    const hint = f.hint ? `<div class="hint${f.warn ? ' warn' : ''}">${f.hint}</div>` : '';
+    if (f.type === 'seg') {
+      el.innerHTML = `<label>${f.label}</label>`;
+      const seg = document.createElement('div'); seg.className = 'seg';
+      f.options.forEach(([v, lab]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = lab; b.dataset.val = String(v);
+        b.addEventListener('click', () => { state[f.key] = v; if (f.onSet) f.onSet(state); onChange(); });
+        seg.appendChild(b);
+      });
+      el.appendChild(seg);
+      if (hint) el.insertAdjacentHTML('beforeend', hint);
+      return el;
+    }
+    const id = 'f_' + f.key;
+    if (f.type === 'text') {
+      el.innerHTML = `<label for="${id}"><span>${f.label}</span></label><div class="row"><input type="text" id="${id}" placeholder="${esc(f.placeholder || '')}" autocomplete="off"></div>${hint}`;
+      const inp = el.querySelector('input');
+      inp.addEventListener('input', () => { state[f.key] = inp.value; onChange(true); });
+      return el;
+    }
+    if (f.type === 'select') {
+      el.innerHTML = `<label for="${id}"><span>${f.label}</span></label><div class="row"><select id="${id}">${f.options.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select></div>${hint}`;
+      const sel = el.querySelector('select');
+      sel.addEventListener('change', () => { state[f.key] = sel.value; onChange(); });
+      return el;
+    }
+    if (f.type === 'check') {
+      el.innerHTML = `<label class="check" for="${id}"><input type="checkbox" id="${id}"><span class="cl">${f.label}</span></label>${hint}`;
+      const chk = el.querySelector('input');
+      chk.addEventListener('change', () => { state[f.key] = chk.checked ? 1 : 0; if (f.onSet) f.onSet(state); onChange(); });
+      return el;
+    }
+    el.innerHTML =
+      `<label for="${id}"><span>${f.label}</span><span class="derived" data-derived></span></label>` +
+      `<div class="row"><input type="number" id="${id}" min="${f.min}" max="${f.max}" step="${f.step}" inputmode="decimal"><span class="unit">${f.unit}</span></div>` +
+      (f.slider ? `<input type="range" aria-label="${f.label} (cursore)" min="${f.min}" max="${f.max}" step="${f.step}">` : '') + hint;
+    const num = el.querySelector('input[type="number"]');
+    const rng = el.querySelector('input[type="range"]');
+    num.addEventListener('input', () => { const v = parseFloat(num.value); if (!isNaN(v)) { state[f.key] = v; if (rng) rng.value = v; onChange(true); } });
+    num.addEventListener('change', () => { let v = parseFloat(num.value); if (isNaN(v)) v = DEFAULTS[f.key]; v = Math.min(f.max, Math.max(f.min, v)); state[f.key] = v; onChange(); });
+    if (rng) rng.addEventListener('input', () => { state[f.key] = parseFloat(rng.value); num.value = rng.value; onChange(true); });
+    return el;
+  }
+  function syncSidebar(skipInputs) {
+    GROUPS.forEach(g => {
+      const gd = groupsEl.querySelector(`details[data-group="${g.title}"]`);
+      if (gd && g.showIf) gd.style.display = g.showIf(state) ? '' : 'none';
+      g.fields.forEach(f => {
+        const el = groupsEl.querySelector(`.field[data-key="${f.alias || f.key}"]`);
+        if (!el) return;
+        if (f.showIf) el.style.display = f.showIf(state) ? '' : 'none';
+        if (f.type === 'seg') { el.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === String(state[f.key])))); return; }
+        if (f.type === 'check') { el.querySelector('input').checked = !!state[f.key]; return; }
+        if (f.type === 'select') { el.querySelector('select').value = state[f.key]; return; }
+        if (f.type === 'text') { if (!skipInputs) el.querySelector('input').value = state[f.key] || ''; return; }
+        if (!skipInputs) {
+          const num = el.querySelector('input[type="number"]'); num.value = state[f.key];
+          const rng = el.querySelector('input[type="range"]'); if (rng) rng.value = state[f.key];
+        }
+        const dv = el.querySelector('[data-derived]'); if (dv && f.derived) dv.textContent = f.derived(state);
+      });
+    });
+    // il campo autoconsumo mostra il valore calcolato quando è in modalità "calcolata"
+    const acEl = groupsEl.querySelector('.field[data-key="autoMode"] .hint');
+    if (acEl) { const m = lastModel; if (m) acEl.textContent = (state.autoMode === 'calc' ? 'Calcolato: ' + fmtInt(m.quota * 100) + '% (fasce, profilo mensile e ore di sole' + (state.batteria > 0 ? ', batteria compresa' : '') + '). ' : 'Impostato a mano. Il calcolo darebbe ' + fmtInt(m.quotaCalc * 100) + '%. ') + 'Manuale: la imposti tu.'; }
+  }
+
+  /* =====================================================================
+     RENDER
+     ===================================================================== */
+  let lastModel = null;
+  function onChange(fromTyping) { saveState(); render(); syncSidebar(fromTyping); }
+  function render() {
+    const m = compute(state); lastModel = m;
+    renderHead(m); renderFacts(m); renderKpis(m); renderStory(m); renderWhy(m); renderFamily(m); renderBill(m); renderMonth(m); renderInc(m); renderCum(m); renderFin(m); renderTable(m); renderSteps(m); renderFaq(m); renderAssump(m); renderContact(m); renderAgent(m);
+  }
+  const soggetto = s => isCasa(s) ? 'la famiglia' : isCond(s) ? 'il condominio' : 'l’azienda';
+  const Soggetto = s => { const t = soggetto(s); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const nomeCliente = s => s.nome && s.nome.trim() ? s.nome.trim() : (isCasa(s) ? 'Abitazione' : isCond(s) ? 'Condominio' : isTerra(s) ? 'Impianto a terra' : 'Azienda');
+
+  function renderHead(m) {
+    const s = state;
+    if (isTerra(s)) { renderHeadTerra(m); return; }
+    document.getElementById('dateLine').textContent = 'Piano del ' + dataOggi + (s.consulente ? ' · a cura di ' + s.consulente : '');
+    document.getElementById('eyebrow').textContent = [TIPO_LABEL[s.tipo], s.localita, s.installatore ? 'impianto ' + s.installatore : ''].filter(Boolean).join(' · ');
+    document.getElementById('title').textContent = 'Piano Fotovoltaico ' + nomeCliente(s);
+    const pill = document.getElementById('pill');
+    pill.textContent = s.preventivo ? 'Preventivo ' + s.preventivo : 'Stima preliminare';
+    pill.className = 'pill' + (s.preventivo ? ' ok' : '');
+    const lede = isCasa(s)
+      ? 'Il tetto di casa può produrre buona parte della corrente che la famiglia usa ogni giorno. Questa pagina spiega quanto costa, quanto si risparmia e in quanto tempo si ripaga.'
+      : isCond(s)
+        ? 'Il tetto del palazzo può produrre una parte della corrente che il condominio già usa ogni giorno per le parti comuni. Questa pagina spiega quanto costa, quanto si risparmia e in quanto tempo si ripaga.'
+        : 'Il tetto dell’azienda può produrre una parte della corrente usata ogni giorno per lavorare, con incentivi fiscali dedicati alle imprese. Questa pagina spiega quanto costa, quanto si risparmia e in quanto tempo si ripaga.';
+    document.getElementById('lede').innerHTML = lede + ' <span class="hint-vars">Ogni numero si aggiorna cambiando le variabili <span class="only-desktop">nel pannello a sinistra</span><a class="only-mobile" href="#variabili">in fondo alla pagina</a>.</span>';
+    document.getElementById('printHead').innerHTML = `<span><b>Piano Fotovoltaico · ${esc(nomeCliente(s))}</b></span><span>${esc(s.consulente || '')}${s.telefono ? ' · ' + esc(s.telefono) : ''}${s.email ? ' · ' + esc(s.email) : ''} · ${dataOggi}</span>`;
+  }
+
+  function renderFacts(m) {
+    const s = state, moduli = Math.round(s.kwp * 1000 / 460);
+    if (isTerra(s)) { renderFactsTerra(m); return; }
+    const facts = [];
+    if (isCond(s)) facts.push([fmtInt(s.unita), 'famiglie']);
+    facts.push([fmtInt(s.consumo) + ' kWh', 'consumati ogni anno' + (s.aumento ? ' (oggi)' : '')]);
+    if (s.aumento) facts.push([fmtInt(m.consumo) + ' kWh', 'consumo previsto']);
+    facts.push([fmtEur(m.bollettaOggi), 'di corrente all’anno, oggi']);
+    facts.push([fmtDec(s.kwp, 1) + ' kWp', 'di impianto proposto']);
+    facts.push([fmtInt(moduli), 'pannelli sul tetto']);
+    if (s.batteria > 0) facts.push([fmtDec(s.batteria, 1) + ' kWh', 'di batteria']);
+    document.getElementById('facts').innerHTML = facts.map(f => `<div class="fact"><b>${f[0]}</b><span>${f[1]}</span></div>`).join('');
+    let html = '';
+    for (let i = 0; i < Math.min(moduli, 400); i++) html += '<i></i>';
+    document.getElementById('mosaic').innerHTML = html;
+  }
+
+  function renderKpis(m) {
+    const s = state;
+    if (isTerra(s)) { renderKpisTerra(m); return; }
+    const chi = isCond(s) ? 'condominio e famiglie' : soggetto(s).replace(/^l[’a]\s?/, '').replace(/^il\s/, '');
+    let tiles;
+    const incMese = m.rows[0].incentivi / 12;
+    if (m.fin) {
+      const netto = m.nettoY1Fin;
+      const benMese = (m.beneficioY1 + m.rows[0].incentivi - m.rows[0].om) / 12;
+      tiles = [
+        { hero: true, label: netto >= 0 ? 'Il primo anno, pagata la rata, ' + chi + ' ' + (isCond(s) ? 'sono' : 'è') + ' in attivo di' : 'Il primo anno, pagata la rata, ' + chi + ' ' + (isCond(s) ? 'integrano' : 'integra'), value: fmtEur(Math.abs(netto)), sub: 'rata ' + fmtEur(m.rata) + ' al mese contro ' + fmtEur(benMese) + ' al mese di benefici' + (incMese > 0 ? ', di cui ' + fmtEur(incMese) + ' di incentivi' : '') + (m.acconto > 0 ? ' · acconto ' + fmtEur(m.acconto) : ' · senza anticipare nulla') },
+        { label: 'Investimento totale', value: fmtEur(m.invest), sub: (m.ivaF === 1 ? 'IVA esclusa (recuperabile)' : 'IVA ' + s.iva + '% inclusa') + ' · finanziati ' + fmtEur(m.finanziato) + (m.reddito ? ' · reddito energetico ' + fmtEur(m.reddito) : '') },
+        { label: 'Rata mensile', value: fmtEur(m.rata), sub: fmtInt(s.durata) + ' mesi al ' + fmtDec(s.tasso, 2) + '% · interessi totali ' + fmtEur(m.interessi) },
+        { label: 'Guadagno netto in ' + m.H + ' anni', value: fmtEur(m.guadagno), sub: 'dopo aver pagato acconto, rate, spese bancarie e manutenzione' },
+        isAz(s) ? { label: 'Valore attuale netto (VAN)', value: fmtEur(m.van), sub: 'al ' + fmtDec(s.attualizzazione, 1) + '% · rendimento annuo ' + (m.irr == null ? '—' : fmtPct(m.irr * 100, 1)) }
+                : { label: 'Rendimento annuo', value: m.irr == null ? '—' : fmtPct(m.irr * 100, 1), sub: 'tasso interno di rendimento dell’impianto, contro il ' + fmtDec(s.tasso, 2) + '% chiesto dalla banca' }
+      ];
+    } else {
+      tiles = [
+        { hero: true, label: 'L’investimento rientra in', value: fmtYears(m.paybackCassa), sub: 'pagando tutto in cassa, con i risparmi e gli incentivi' },
+        { label: 'Investimento totale', value: fmtEur(m.investDaPagare), sub: (m.ivaF === 1 ? 'IVA esclusa (recuperabile)' : 'IVA ' + s.iva + '% inclusa') + (m.reddito ? ' · dopo ' + fmtEur(m.reddito) + ' di reddito energetico' : '') + (isCond(s) ? ' · ' + fmtEur(m.investDaPagare / Math.max(1, s.unita)) + ' in media per famiglia' : '') },
+        { label: 'Beneficio primo anno', value: fmtEur(m.beneficioY1 + m.incentiviY1), sub: 'bolletta più leggera + energia venduta o condivisa' + (m.incentiviY1 ? ' + incentivi ' + fmtEur(m.incentiviY1) : '') },
+        { label: 'Guadagno netto in ' + m.H + ' anni', value: fmtEur(m.guadagno), sub: 'dopo aver ripagato impianto e manutenzione' },
+        isAz(s) ? { label: 'Valore attuale netto (VAN)', value: fmtEur(m.van), sub: 'al ' + fmtDec(s.attualizzazione, 1) + '% · rendimento annuo ' + (m.irr == null ? '—' : fmtPct(m.irr * 100, 1)) }
+                : { label: 'Rendimento annuo', value: m.irr == null ? '—' : fmtPct(m.irr * 100, 1), sub: 'tasso interno di rendimento dell’investimento' }
+      ];
+    }
+    document.getElementById('kpis').innerHTML = tiles.map(t => `<div class="kpi${t.hero ? ' hero' : ''}"><div class="k-label">${t.label}</div><div class="k-value">${t.value}</div><div class="k-sub">${t.sub}</div></div>`).join('');
+  }
+
+  function renderStory(m) {
+    const s = state, y1 = m.rows[0];
+    if (isTerra(s)) { renderStoryTerra(m); return; }
+    const copertura = y1.prod / m.consumo * 100;
+    const chi = Soggetto(s);
+    const p1 = `Oggi ${soggetto(s)} compra dalla rete <b>${fmtInt(s.consumo)} kWh l’anno</b>${s.aumento ? ' (che diventeranno circa ' + fmtInt(m.consumo) + ' con i nuovi consumi previsti)' : ''} e li paga <b>${fmtEur(m.bollettaOggi)}</b>. Con un impianto da <b>${fmtDec(s.kwp, 1)} kWp</b>${s.batteria > 0 ? ' e una batteria da ' + fmtDec(s.batteria, 1) + ' kWh' : ''}, se ne produce da sol${isCasa(s) ? 'a' : 'o'} circa <b>${fmtInt(y1.prod)} kWh</b>, il <b>${fmtDec(Math.min(999, copertura), 0)}%</b>. Il <b>${fmtInt(m.quota * 100)}%</b> di questa energia viene usata sul posto${s.batteria > 0 ? ', subito o la sera grazie alla batteria' : ' nel momento in cui viene prodotta'}, e ogni kWh non comprato vale <b>${fmtDec(m.pEvit * m.ivaF, 3)} €</b>: la bolletta scende a <b>${fmtEur(m.bollettaDopo)}</b> già dal primo anno.`;
+    let p2 = `L’energia in eccesso viene venduta in rete (<b>${fmtEur(y1.vendita)}</b> il primo anno)`;
+    if (s.auc && y1.auc > 0) p2 += `${isCond(s) ? ' e, quando gli appartamenti la consumano nella stessa ora, il GSE la premia per 20 anni come energia condivisa' : ' e la parte condivisa nella comunità energetica viene premiata dal GSE per 20 anni'} (<b>${fmtEur(y1.auc)}</b>)`;
+    p2 += '. ';
+    const inc = [];
+    if (m.detrRate > 0) inc.push(`la detrazione fiscale del <b>${fmtDec(m.detrRate, m.detrRate % 1 ? 1 : 0)}%</b> restituisce <b>${fmtEur(y1.detr)}</b> l’anno per 10 anni`);
+    if (m.iperTot > 0) inc.push(`l’iperammortamento al ${fmtInt(s.iperMagg)}% vale <b>${fmtEur(m.iperTot)}</b> di tasse in meno, ${fmtEur(m.iperAnno)} l’anno per ${fmtInt(s.anniAmm)} anni`);
+    if (m.sabatini > 0) inc.push(`la Nuova Sabatini green rimborsa circa <b>${fmtEur(m.sabatini)}</b> di interessi`);
+    if (m.fondo > 0) inc.push(`il contributo a fondo perduto del ${fmtInt(s.fondoPerduto)}% porta <b>${fmtEur(m.fondo)}</b>`);
+    if (m.contoTermico > 0) inc.push(`il Conto Termico copre <b>${fmtEur(m.contoTermico)}</b>`);
+    if (m.reddito > 0) inc.push(`il reddito energetico paga <b>${fmtEur(m.reddito)}</b> dell’impianto`);
+    if (inc.length) p2 += 'In più, ' + inc.join('; ') + '.';
+    let p3;
+    if (m.fin) {
+      const rataAnno = m.rata * 12, netto = m.nettoY1Fin;
+      const cassaAnno = m.beneficioY1 - y1.om - rataAnno + (isCond(s) ? 0 : y1.incentivi);
+      const dopoRata = m.rows[Math.min(m.rows.length - 1, Math.ceil(s.durata / 12))];
+      p3 = (m.acconto > 0 ? `Con un acconto di <b>${fmtEur(m.acconto)}</b> (${fmtInt(s.acconto)}%) e finanziando i restanti <b>${fmtEur(m.finanziato)}</b>` : `Finanziando l’intero importo di <b>${fmtEur(m.finanziato)}</b>`) +
+        ` in <b>${fmtInt(s.durata)} mesi</b> al ${fmtDec(s.tasso, 2)}%, la rata è di <b>${fmtEur(m.rata)} al mese</b>, cioè ${fmtEur(rataAnno)} l’anno, contro ${fmtEur(m.beneficioY1 + y1.incentivi)} di benefici. ` +
+        (netto >= 0 ? `${chi} è <b>in attivo di ${fmtEur(netto)} fin dal primo anno</b>${m.acconto > 0 ? '.' : ', senza anticipare un euro.'}` : `Nei primi anni ${soggetto(s)} integra <b>${fmtEur(-netto)} l’anno</b>.`);
+      if (isCond(s) && y1.detr > 0) p3 += ` Attenzione però: ${fmtEur(y1.detr)} di questi sono la detrazione fiscale, che torna alle famiglie con le tasse e non in cassa condominiale; guardando la sola cassa del condominio, la differenza tra benefici e rate è di <b>${cassaAnno >= 0 ? '+' : '−'}${fmtEur(Math.abs(cassaAnno))} l’anno</b>.`;
+      p3 += ` Finita la rata, il beneficio resta tutto: circa <b>${fmtEur(dopoRata.flussoCassa)} l’anno</b>. In ${m.H} anni il guadagno netto è di <b>${fmtEur(m.guadagno)}</b>.`;
+    } else {
+      p3 = `Pagando in cassa <b>${fmtEur(m.investDaPagare)}</b>, l’investimento rientra in <b>${fmtYears(m.paybackCassa)}</b> e in ${m.H} anni lascia un guadagno netto di <b>${fmtEur(m.guadagno)}</b>. Detto in un altro modo: ogni kWh prodotto dal tetto costa <b>${fmtDec(m.costoKwhProdotto, 3)} €</b> su ${m.H} anni, contro i ${fmtDec(m.pEvit * m.ivaF, 3)} € pagati oggi alla rete.`;
+    }
+    let av = '';
+    if (m.avvisi.length) av = `<div class="cassa noprint" style="margin-top:12px"><b>Da controllare:</b><ul style="margin:6px 0 0;padding-left:18px">${m.avvisi.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
+    document.getElementById('story').innerHTML = `<h2>In parole semplici</h2><p>${p1}</p><p>${p2}</p><p>${p3}</p><p style="color:var(--muted);font-size:13px">Ogni anno si evitano circa ${fmtDec(m.co2, 1)} tonnellate di CO₂.</p>${av}`;
+  }
+
+  function renderWhy(m) {
+    const s = state, y1 = m.rows[0];
+    let cards;
+    if (isTerra(s)) { renderWhyTerra(m); return; }
+    if (isCasa(s)) {
+      document.getElementById('whySub').textContent = 'Tre motivi per cui ha senso in questa casa.';
+      cards = [
+        ['Ogni kWh non comprato vale ' + fmtDec(m.pEvit * m.ivaF, 2) + ' €', 'La corrente prodotta sul tetto sostituisce quella più cara: quella che la famiglia compra oggi. Il ' + fmtInt(m.quota * 100) + '% della produzione resta in casa' + (s.batteria > 0 ? ', anche la sera grazie alla batteria' : '') + '.'],
+        ['Lo Stato ne paga una parte', m.detrRate > 0 ? 'Con il bonus casa il ' + fmtInt(m.detrRate) + '% della spesa torna in 10 anni sotto forma di tasse in meno: ' + fmtEur(y1.detr * 10) + ' in totale.' : m.reddito > 0 ? 'Con il reddito energetico il GSE paga ' + fmtEur(m.reddito) + ' dell’impianto.' : 'Verifica con il commercialista quale detrazione spetta: il bonus casa vale il 50% sulla prima casa e il 36% sulle altre.'],
+        ['Protezione dai rincari', 'Per 25–30 anni una parte della corrente ha prezzo zero, qualunque cosa faccia il mercato. Il piano ipotizza un rincaro del ' + fmtDec(s.rincaro, 1) + '% l’anno: puoi cambiarlo e vedere cosa succede.']
+      ];
+    } else if (isCond(s)) {
+      document.getElementById('whySub').textContent = 'Tre cose che rendono questo palazzo adatto.';
+      cards = [
+        ['Le parti comuni consumano di giorno', 'Ascensori, autoclavi, luci' + (s.profilo === 'condominio_pdc' ? ' e la pompa di calore centralizzata' : '') + ' consumano quando c’è il sole. Il ' + fmtInt(m.quota * 100) + '% dell’energia del tetto trova subito chi la usa.'],
+        ['Nessuno anticipa nulla', m.fin ? 'Il finanziamento è intestato al condominio e la rata entra nelle spese ordinarie, ripartite per millesimi come la bolletta. La copre il risparmio stesso.' : 'L’investimento si ripartisce per millesimi: ' + fmtEur(m.investDaPagare / Math.max(1, s.unita)) + ' in media per famiglia, che rientrano con le spese più basse.'],
+        ['L’eccesso non si spreca', s.auc ? 'Con il gruppo di autoconsumo collettivo l’energia che le parti comuni non usano va agli appartamenti, e il GSE la premia per 20 anni.' : 'L’energia in eccesso viene venduta in rete; attivando il gruppo di autoconsumo collettivo si può farne di più.']
+      ];
+    } else {
+      document.getElementById('whySub').textContent = 'Tre motivi per cui conviene a questa azienda.';
+      cards = [
+        ['Consuma quando il tetto produce', 'L’attività lavora di giorno nei feriali (F1 al ' + fmtInt(s.f1) + '% dei consumi): il ' + fmtInt(m.quota * 100) + '% dell’energia prodotta viene usata sul posto, senza batterie.'],
+        ['Incentivi da impresa', m.iperTot > 0 ? 'L’iperammortamento 2026 vale ' + fmtEur(m.iperTot) + ' di tasse in meno' + (m.sabatini > 0 ? ', la Nuova Sabatini altri ' + fmtEur(m.sabatini) : '') + (m.fondo > 0 ? ', il fondo perduto ' + fmtEur(m.fondo) : '') + '.' : 'Iperammortamento, Nuova Sabatini e bandi regionali: da attivare nel pannello quando ricorrono le condizioni.'],
+        ['Costo dell’energia sotto controllo', 'Ogni kWh prodotto dal tetto costa ' + fmtDec(m.costoKwhProdotto, 3) + ' € su ' + m.H + ' anni, contro ' + fmtDec(m.pEvit * m.ivaF, 3) + ' € pagati oggi. E il prezzo non cambia per 25 anni.']
+      ];
+    }
+    document.getElementById('why').innerHTML = cards.map((c, i) => `<div class="card why"><div class="why-n">${i + 1}</div><h3>${c[0]}</h3><p>${c[1]}</p></div>`).join('');
+  }
+
+  function renderFamily(m) {
+    const s = state, sec = document.getElementById('secFamily');
+    if (!isCond(s)) { sec.hidden = true; return; }
+    sec.hidden = false;
+    document.getElementById('famSub').textContent = 'Spesa media di corrente condominiale per unità abitativa, IVA inclusa, divisa per le ' + fmtInt(s.unita) + ' famiglie. Sono medie: la ripartizione vera segue i millesimi.';
+    const y1 = m.rows[0], n = Math.max(1, s.unita);
+    const oggi = m.bollettaOggi / n;
+    const durante = (m.bollettaDopo - y1.auc - y1.vendita - y1.incentivi + y1.om + (m.fin ? m.rata * 12 : 0)) / n;
+    const idxDopo = Math.min(m.rows.length - 1, Math.ceil(s.durata / 12));
+    const rDopo = m.rows[idxDopo];
+    const bollettaDopoRata = m.bollettaFutura * Math.pow(1 + s.rincaro / 100, rDopo.t - 1);
+    const dopo = (bollettaDopoRata - rDopo.risparmio - rDopo.auc - rDopo.vendita - rDopo.incentivi + rDopo.om) / n;
+    const senzaImpiantoDopo = bollettaDopoRata / n;
+    const tiles = m.fin ? [
+      { label: 'Oggi', value: fmtEur(oggi), sub: 'all’anno per famiglia, in media, con la bolletta attuale' },
+      { label: 'Durante il finanziamento (' + fmtInt(s.durata / 12) + ' anni)', value: fmtEur(durante), sub: (durante <= oggi ? 'già ' + fmtEur(oggi - durante) + ' in meno all’anno, rata compresa' : fmtEur(durante - oggi) + ' in più all’anno finché c’è la rata') + (m.acconto > 0 ? ', più ' + fmtEur(m.acconto / n) + ' di acconto una tantum' : ', senza anticipare nulla'), best: durante <= oggi },
+      { label: 'Finita la rata (dall’anno ' + rDopo.t + ')', value: fmtEur(dopo), sub: fmtEur(senzaImpiantoDopo - dopo) + ' in meno all’anno rispetto a non fare nulla (bolletta a ' + fmtEur(senzaImpiantoDopo) + ' col rincaro)', best: true }
+    ] : [
+      { label: 'Oggi', value: fmtEur(oggi), sub: 'all’anno per famiglia, in media, con la bolletta attuale' },
+      { label: 'Quota dell’investimento', value: fmtEur(m.investDaPagare / n), sub: 'una tantum, in media per famiglia, pagando tutto in cassa' },
+      { label: 'Dal primo anno', value: fmtEur((m.bollettaDopo - y1.auc - y1.vendita - y1.incentivi + y1.om) / n), sub: fmtEur(oggi - (m.bollettaDopo - y1.auc - y1.vendita - y1.incentivi + y1.om) / n) + ' in meno all’anno per famiglia', best: true }
+    ];
+    document.getElementById('family').innerHTML = tiles.map(t => `<div class="card fam${t.best ? ' best' : ''}"><div class="f-label">${t.label}</div><div class="f-value">${t.value}</div><div class="f-sub">${t.sub}</div></div>`).join('');
+  }
+
+  /* ---------------- Grafici ---------------- */
+  const tip = document.getElementById('tip');
+  function showTip(html, ev) { tip.innerHTML = html; tip.style.display = 'block'; moveTip(ev); }
+  function moveTip(ev) { const w = tip.offsetWidth, h = tip.offsetHeight; let x = ev.clientX + 14, y = ev.clientY + 14; if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
+  function hideTip() { tip.style.display = 'none'; }
+  function bindTips(container) { container.querySelectorAll('[data-tip]').forEach(el => { el.addEventListener('mouseenter', ev => showTip(el.dataset.tip, ev)); el.addEventListener('mousemove', moveTip); el.addEventListener('mouseleave', hideTip); }); }
+  function topBar(x, y, w, h, r) { if (h <= 0) return ''; r = Math.min(r, w / 2, h); return 'M' + x + ',' + (y + h) + 'V' + (y + r) + 'a' + r + ',' + r + ' 0 0 1 ' + r + ',-' + r + 'h' + (w - 2 * r) + 'a' + r + ',' + r + ' 0 0 1 ' + r + ',' + r + 'V' + (y + h) + 'Z'; }
+  function niceStep(max, ticks) { const raw = max / ticks, p = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw / p; const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10; return n * p; }
+
+  function renderBill(m) {
+    const s = state;
+    if (isTerra(s)) { renderBillTerra(m); return; }
+    document.getElementById('legendBill').innerHTML = '<span><i style="background:var(--s-bill)"></i>Oggi</span><span><i style="background:var(--s-save)"></i>Con il fotovoltaico</span>';
+    document.getElementById('legendMonth').innerHTML = '<span><i style="background:var(--s-bill);opacity:.35"></i>Consumo</span><span><i style="background:var(--s-bill);opacity:.7"></i>di cui di giorno nei feriali (F1)</span><span><i style="background:var(--s-pv)"></i>Produzione del tetto</span>';
+    document.getElementById('billTitle').textContent = 'La bolletta, prima e dopo';
+    document.getElementById('billSub').textContent = 'Spesa annua di energia elettrica, ' + (m.ivaF === 1 ? 'IVA esclusa' : 'IVA inclusa') + ', primo anno di esercizio' + (s.aumento ? ', con i consumi previsti' : '') + '.';
+    const W = 460, H = 250, padL = 16, padR = 16, padT = 30, padB = 34;
+    const oggi = s.aumento ? m.bollettaFutura : m.bollettaOggi;
+    const vals = [{ lab: s.aumento ? 'Senza impianto' : 'Oggi', v: oggi, c: 'var(--s-bill)' }, { lab: 'Con il fotovoltaico', v: m.bollettaDopo, c: 'var(--s-save)' }];
+    const max = Math.max(oggi, 1) * 1.08;
+    const innerH = H - padT - padB, base = H - padB;
+    const bw = 120, gap = 60, x0 = (W - (2 * bw + gap)) / 2;
+    let out = '';
+    vals.forEach((d, i) => {
+      const h = Math.max(0, d.v) / max * innerH, x = x0 + i * (bw + gap), y = base - h;
+      out += `<path d="${topBar(x, y, bw, h, 4)}" fill="${d.c}"></path><text x="${x + bw / 2}" y="${y - 8}" text-anchor="middle" class="val strong">${fmtEur(d.v)}</text><text x="${x + bw / 2}" y="${base + 20}" text-anchor="middle">${d.lab}</text><rect class="hit" x="${x - 10}" y="${padT}" width="${bw + 20}" height="${innerH + 10}" data-tip="<b>${d.lab}</b><br>${fmtEur(d.v)} l’anno"></rect>`;
+    });
+    const delta = oggi - m.bollettaDopo, xa = x0 + bw + gap / 2;
+    out += `<line class="axis" x1="${padL}" x2="${W - padR}" y1="${base}" y2="${base}"></line><text x="${xa}" y="${base - innerH * (Math.max(0, m.bollettaDopo) / max) - innerH * (delta / max) / 2 + 4}" text-anchor="middle" class="val" style="fill:var(--good-text)">−${fmtEur(delta)}</text>`;
+    const el = document.getElementById('chartBill');
+    el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Spesa annua senza impianto ${fmtEur(oggi)}, con il fotovoltaico ${fmtEur(m.bollettaDopo)}">${out}</svg>`;
+    bindTips(el);
+  }
+
+  function renderMonth(m) {
+    const s = state, y1 = m.rows[0];
+    if (isTerra(s)) { renderMonthTerra(m); return; }
+    const W = 460, H = 250, padL = 44, padR = 12, padT = 18, padB = 30;
+    const prod = prodShape(s).map(v => v * y1.prod);
+    const cons = consShape(s).map(v => v * m.consumo);
+    const consF1 = cons.map(v => v * s.f1 / 100);
+    const max = Math.max(Math.max.apply(null, prod), Math.max.apply(null, cons)) * 1.12;
+    const innerW = W - padL - padR, innerH = H - padT - padB, base = H - padB;
+    const step = niceStep(max, 4);
+    let out = '';
+    for (let v = 0; v <= max; v += step) { const y = base - v / max * innerH; out += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}"></line><text x="${padL - 6}" y="${y + 4}" text-anchor="end">${v >= 1000 ? fmtInt(v / 1000) + 'k' : fmtInt(v)}</text>`; }
+    const slot = innerW / 12, bw = slot * 0.36, gap = slot * 0.06;
+    let over = 0;
+    cons.forEach((c, i) => {
+      if (prod[i] > c) over++;
+      const x0 = padL + i * slot + (slot - 2 * bw - gap) / 2;
+      const hc = c / max * innerH, hf = consF1[i] / max * innerH, hp = prod[i] / max * innerH;
+      out += `<path d="${topBar(x0, base - hc, bw, hc, 3)}" fill="var(--s-bill)" opacity="0.35"></path><rect x="${x0}" y="${base - hf}" width="${bw}" height="${hf}" fill="var(--s-bill)" opacity="0.7"></rect><path d="${topBar(x0 + bw + gap, base - hp, bw, hp, 3)}" fill="var(--s-pv)"></path><text x="${padL + i * slot + slot / 2}" y="${base + 18}" text-anchor="middle">${MONTHS[i]}</text><rect class="hit" x="${padL + i * slot}" y="${padT}" width="${slot}" height="${innerH}" data-tip="<b>${MONTHS[i]}</b><br>Consumo ${fmtInt(c)} kWh<br>di cui di giorno nei feriali (F1) ${fmtInt(consF1[i])} kWh<br>Produzione ${fmtInt(prod[i])} kWh"></rect>`;
+    });
+    out += `<line class="axis" x1="${padL}" x2="${W - padR}" y1="${base}" y2="${base}"></line>`;
+    const el = document.getElementById('chartMonth');
+    el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Consumo mensile confrontato con la produzione mensile stimata">${out}</svg>`;
+    bindTips(el);
+    document.getElementById('monthNote').textContent = (over === 0 ? 'In nessun mese il tetto produce più di quanto si consuma: ' : over + (over === 1 ? ' mese su 12 ha' : ' mesi su 12 hanno') + ' produzione superiore al consumo: ') + 'l’energia consumata sul posto è stimata al ' + fmtInt(m.quota * 100) + '%, ' + (s.autoMode === 'calc' ? 'calcolata incrociando le fasce F1/F2/F3 con le ore di sole, mese per mese' : 'impostata a mano') + (s.batteria > 0 ? ', batteria compresa' : '') + '. Profilo: ' + PROFILI[s.profilo].label.toLowerCase() + '.';
+  }
+
+  function renderInc(m) {
+    const s = state, y1 = m.rows[0];
+    const on = [], off = [], na = [];
+    if (isTerra(s)) { renderIncTerra(m); return; }
+    const item = (st, title, val, txt) => `<div class="it"><span class="st ${st}">${st === 'on' ? 'nel piano' : st === 'off' ? 'disponibile' : st === 'chk' ? 'da verificare' : 'non spetta'}</span><div><h3>${title}${val ? '<span>' + val + '</span>' : ''}</h3><p>${txt}</p></div></div>`;
+    // detrazione
+    if (isCasa(s) || isCond(s)) {
+      const txt = 'Bonus casa (art. 16-bis TUIR): 50% per l’abitazione principale, 36% per gli altri immobili, tetto 96.000 € per unità, in 10 rate annuali IRPEF.' + (isCond(s) ? ' Sulle parti comuni ogni famiglia scarica la propria quota millesimale con la propria aliquota: la detrazione non entra in cassa condominiale.' : '');
+      if (m.detrRate > 0) on.push(item('on', 'Detrazione fiscale ' + fmtDec(m.detrRate, m.detrRate % 1 ? 1 : 0) + '%', fmtEur(y1.detr) + ' l’anno × 10', txt));
+      else off.push(item('off', 'Detrazione fiscale (bonus casa)', '', txt + (m.reddito ? ' Non cumulabile con il reddito energetico.' : '')));
+    }
+    if (isCasa(s)) {
+      const txt = 'Impianto da 2 a 6 kW pagato dal GSE per famiglie con ISEE fino a 15.000 € (30.000 con almeno 4 figli): 2.000 € + 1.500 €/kW, massimo 11.000 €. Il bando 2026 non è ancora riaperto: verificare sul sito GSE.';
+      if (m.reddito > 0) on.push(item('chk', 'Reddito energetico', fmtEur(m.reddito) + ' una tantum', txt));
+      else off.push(item('off', 'Reddito energetico', '', txt));
+      na.push(item('na', 'Conto Termico 3.0', '', 'Per il fotovoltaico non vale sulle case private: solo pubbliche amministrazioni ed edifici del terziario, e solo abbinato a una pompa di calore.'));
+      na.push(item('na', 'Iperammortamento, Nuova Sabatini, bandi imprese', '', 'Riservati alle imprese con partita IVA.'));
+    }
+    if (isAz(s)) {
+      const txtI = 'Legge di Bilancio 2026 (L. 199/2025): il costo dell’impianto in autoconsumo si deduce maggiorato del 180% (fino a 2,5 milioni; 100% fino a 10; 50% fino a 20). Con IRES al 24% vale circa il 43% dell’investimento in tasse in meno, spalmato sugli anni di ammortamento. Investimenti dal 1/1/2026 al 30/9/2028; moduli iscritti al registro ENEA categoria B o C (celle prodotte in UE); impianto entro il 105% del fabbisogno. Servono perizia tecnica asseverata e certificazione contabile. Il decreto attuativo e la piattaforma GSE erano ancora attesi a luglio 2026.';
+      if (m.iperTot > 0) on.push(item('chk', 'Iperammortamento ' + fmtInt(s.iperMagg) + '%', fmtEur(m.iperAnno) + ' l’anno × ' + fmtInt(s.anniAmm), txtI)); else off.push(item('off', 'Iperammortamento 2026', '', txtI));
+      const txtS = 'Per le PMI: il Ministero rimborsa gli interessi di un finanziamento bancario o leasing a 5 anni, calcolati al 3,575% convenzionale, cioè circa il 10% dell’investimento, a fondo perduto. Cumulabile con l’iperammortamento.';
+      if (m.sabatini > 0) on.push(item('on', 'Nuova Sabatini green', fmtEur(m.sabatini), txtS)); else off.push(item('off', 'Nuova Sabatini green', '', txtS));
+      const txtF = 'Bandi regionali (Lombardia "Linea Impresa Efficiente": fino al 45% per le PMI), ZES Unica nel Mezzogiorno (credito d’imposta fino al 60%), PNRR per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti (40%, lavori entro il 30/6/2026). Dipende da dove si trova l’azienda e dai bandi aperti.';
+      if (m.fondo > 0) on.push(item('chk', 'Contributo a fondo perduto ' + fmtInt(s.fondoPerduto) + '%', fmtEur(m.fondo), txtF)); else off.push(item('off', 'Contributi a fondo perduto (bandi)', '', txtF));
+      const txtC = 'Fino al 45–65% per gli edifici del terziario, ma il fotovoltaico è incentivato solo se realizzato insieme alla sostituzione dell’impianto di riscaldamento con una pompa di calore elettrica.';
+      if (m.contoTermico > 0) on.push(item('chk', 'Conto Termico 3.0 ' + fmtInt(s.contoTermico) + '%', fmtEur(m.contoTermico), txtC)); else off.push(item('off', 'Conto Termico 3.0', '', txtC));
+      na.push(item('na', 'Transizione 5.0 (credito d’imposta)', '', 'Terminato il 31/12/2025: sostituito dall’iperammortamento.'));
+      na.push(item('na', 'Bonus casa 50% / 36%', '', 'Riservato alle persone fisiche su immobili residenziali.'));
+    }
+    if (isCond(s)) {
+      const txtF = 'PNRR per configurazioni di autoconsumo collettivo nei comuni sotto i 50.000 abitanti: 40% a fondo perduto, ma con lavori conclusi entro il 30/6/2026. Bandi regionali per condomini quando aperti.';
+      if (m.fondo > 0) on.push(item('chk', 'Contributo a fondo perduto ' + fmtInt(s.fondoPerduto) + '%', fmtEur(m.fondo), txtF)); else off.push(item('off', 'Contributi a fondo perduto', '', txtF));
+      na.push(item('na', 'Iperammortamento e Nuova Sabatini', '', 'Riservati alle imprese.'));
+      na.push(item('na', 'Conto Termico 3.0', '', 'Per il fotovoltaico non vale sugli edifici residenziali.'));
+    }
+    // AUC / CER
+    const txtA = 'Tariffa premio GSE per 20 anni sull’energia condivisa nella stessa ora tra impianto e membri (DM CACER): fino a 120 €/MWh sotto i 200 kW, +10 al Nord e +4 al Centro, più la restituzione ARERA di circa 9 €/MWh. Richiedibile fino al 31/12/2027.';
+    if (s.auc && y1.auc > 0) on.push(item('on', isCond(s) ? 'Autoconsumo collettivo (AUC)' : 'Comunità energetica (CER)', fmtEur(y1.auc) + ' l’anno × 20', txtA)); else off.push(item('off', isCond(s) ? 'Autoconsumo collettivo (AUC)' : 'Comunità energetica (CER)', '', txtA));
+    on.push(item('on', 'Ritiro dedicato GSE', fmtEur(y1.vendita) + ' l’anno', 'L’energia in eccesso immessa in rete viene pagata dal GSE al prezzo zonale orario (circa 0,10–0,13 €/kWh nel 2026) o al minimo garantito di 0,0475 €/kWh. Lo scambio sul posto è chiuso ai nuovi impianti dal 2025.'));
+    if (!isAz(s) || !s.ivaRec) on.push(item('on', 'IVA agevolata ' + fmtInt(s.iva) + '%', '', isAz(s) ? 'Aliquota applicata all’impianto.' : 'Sugli impianti fotovoltaici per uso residenziale e condominiale si applica l’IVA al 10% invece del 22%.'));
+    document.getElementById('incSub').textContent = 'Cosa spetta a ' + (isCasa(s) ? 'una famiglia' : isCond(s) ? 'un condominio' : 'un’azienda') + ' nel 2026, e cosa è già conteggiato nel piano.';
+    document.getElementById('incList').innerHTML = on.concat(off).join('');
+    document.getElementById('incNa').innerHTML = na.join('') || '<p style="color:var(--muted);font-size:13px">Nessuno.</p>';
+  }
+
+  function renderCum(m) {
+    const cw = document.getElementById('chartCum').clientWidth || 960;
+    const W = Math.max(420, Math.min(960, cw)), H = W < 640 ? 320 : 300, padL = 56, padR = 20, padT = 24, padB = 34;
+    const series = [{ data: m.cumC, c: 'var(--s-save)', dash: '', lab: 'Tutto in cassa', pay: m.paybackCassa, active: !m.fin }, { data: m.cumF, c: 'var(--s-pv)', dash: '6 5', lab: 'Con finanziamento', pay: m.paybackFin, active: m.fin }];
+    const all = m.cumC.concat(m.cumF);
+    let min = Math.min.apply(null, all), max = Math.max.apply(null, all);
+    if (max < 0) max = 0; if (min > 0) min = 0;
+    const range = max - min || 1; min -= range * 0.05; max += range * 0.08;
+    const innerW = W - padL - padR, innerH = H - padT - padB;
+    const X = t => padL + t / m.H * innerW, Y = v => padT + (max - v) / (max - min) * innerH;
+    const step = niceStep(max - min, 5);
+    let out = '';
+    for (let v = Math.ceil(min / step) * step; v <= max; v += step) out += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${Y(v)}" y2="${Y(v)}"></line><text x="${padL - 8}" y="${Y(v) + 4}" text-anchor="end">${Math.abs(v) >= 1000 ? fmtInt(v / 1000) + 'k' : fmtInt(v)}</text>`;
+    out += `<line class="axis" x1="${padL}" x2="${W - padR}" y1="${Y(0)}" y2="${Y(0)}"></line>`;
+    const tickStep = W < 640 ? 5 : (m.H > 20 ? 5 : 2);
+    for (let t = 0; t <= m.H; t += tickStep) out += `<text x="${X(t)}" y="${H - padB + 20}" text-anchor="middle">${t === 0 ? 'oggi' : 'anno ' + t}</text>`;
+    const act = series.find(sr => sr.active);
+    let area = 'M' + X(0) + ',' + Y(0);
+    act.data.forEach((v, t) => { area += 'L' + X(t) + ',' + Y(v); });
+    area += 'L' + X(m.H) + ',' + Y(0) + 'Z';
+    out += `<path d="${area}" fill="${act.c}" opacity="0.12"></path>`;
+    series.forEach(sr => {
+      let d = '';
+      sr.data.forEach((v, t) => { d += (t ? 'L' : 'M') + X(t) + ',' + Y(v); });
+      out += `<path d="${d}" fill="none" stroke="${sr.c}" stroke-width="${sr.active ? 2.5 : 2}" stroke-dasharray="${sr.dash}" opacity="${sr.active ? 1 : 0.7}" stroke-linejoin="round"></path>`;
+      if (sr.pay != null && sr.pay > 0 && sr.pay <= m.H) {
+        out += `<circle cx="${X(sr.pay)}" cy="${Y(0)}" r="6" fill="${sr.c}" stroke="var(--surface)" stroke-width="2"></circle>`;
+        if (sr.active) out += `<text x="${X(sr.pay) + 10}" y="${Y(0) - 10}" class="val strong">rientro: ${fmtYears(sr.pay)}</text>`;
+      }
+    });
+    const endC = m.cumC[m.cumC.length - 1], endF = m.cumF[m.cumF.length - 1];
+    const close = Math.abs(Y(endC) - Y(endF)) < 16;
+    const yC = close ? Math.min(Y(endC), Y(endF)) - 8 : Y(endC) - 8;
+    const yF = close ? Math.max(Y(endC), Y(endF)) + 16 : Y(endF) - 8;
+    out += `<text x="${X(m.H) - 4}" y="${yC}" text-anchor="end" class="val" style="fill:var(--s-save)">Tutto in cassa ${fmtEur(endC)}</text><text x="${X(m.H) - 4}" y="${yF}" text-anchor="end" class="val" style="fill:var(--s-pv)">Con finanziamento ${fmtEur(endF)}</text>`;
+    for (let t = 0; t <= m.H; t++) { const x0 = t === 0 ? padL : X(t - 0.5), x1 = t === m.H ? X(m.H) : X(t + 0.5); out += `<rect class="hit" x="${x0}" y="${padT}" width="${x1 - x0}" height="${innerH}" data-tip="<b>${t === 0 ? 'Oggi' : 'Fine anno ' + t}</b><br>In cassa: ${fmtEur(m.cumC[t])}<br>Con finanziamento: ${fmtEur(m.cumF[t])}"></rect>`; }
+    const el = document.getElementById('chartCum');
+    el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flusso di cassa cumulato in ${m.H} anni">${out}</svg>`;
+    bindTips(el);
+  }
+
+  function renderFin(m) {
+    const s = state, y1 = m.rows[0];
+    if (isTerra(s)) { renderFinTerra(m); return; }
+    document.getElementById('finTitle').textContent = 'Con il finanziamento';
+    document.getElementById('finSub').textContent = 'La rata si confronta direttamente con quello che si risparmia ogni mese. L’acconto si regola nelle variabili: più acconto, rata più bassa.';
+    const benMese = (m.beneficioY1 + y1.incentivi - y1.om) / 12;
+    const netto = benMese - m.rata;
+    const maxBar = Math.max(benMese, m.rata, 1);
+    const cond = `tasso ${fmtDec(s.tasso, 2)}% per ${fmtInt(s.durata)} mesi, istruttoria ${fmtEur(s.istruttoria)}, imposta sostitutiva ${fmtDec(s.imposta, 2)}%, ${fmtDec(s.incasso, 2)} € di incasso per rata`;
+    const intro = m.fin
+      ? `Finanziamento di ${fmtEur(m.finanziato)}${m.acconto > 0 ? ' dopo un acconto di ' + fmtEur(m.acconto) : ', senza acconto'}: ${cond}.`
+      : `Stai guardando lo scenario "tutto in cassa". Per confronto, qui sotto cosa succederebbe finanziando ${fmtEur(m.finanziato)}${m.acconto > 0 ? ' con un acconto di ' + fmtEur(m.acconto) : ' senza acconto'}: ${cond}.`;
+    let cassa = '';
+    if (isCond(s) && y1.detr > 0) {
+      const cassaNetta = (m.beneficioY1 - y1.om + (y1.incentivi - y1.detr)) / 12 - m.rata;
+      cassa = `<div class="cassa"><b>Cassa del condominio e tasche delle famiglie sono due cose diverse.</b> Dei ${fmtEur(benMese)} al mese di benefici, ${fmtEur(y1.detr / 12)} sono la detrazione fiscale: arriva a ogni famiglia nella dichiarazione dei redditi, per 10 anni, non nel conto del condominio. Guardando solo la cassa condominiale entrano ${fmtEur((m.beneficioY1 - y1.om + y1.incentivi - y1.detr) / 12)} al mese contro una rata di ${fmtEur(m.rata)}: <b>${cassaNetta >= 0 ? '+' : '−'}${fmtEur(Math.abs(cassaNetta))} al mese</b>${cassaNetta < 0 ? ', cioè ' + fmtEur(Math.abs(cassaNetta) * 12) + ' l’anno da ripartire tra le famiglie, che intanto recuperano ' + fmtEur(y1.detr) + ' di tasse' : ''}.</div>`;
+    }
+    if (isAz(s) && m.iperTot > 0) cassa += `<div class="cassa"><b>L’iperammortamento non è un bonifico:</b> sono tasse in meno da pagare, ${fmtEur(m.iperAnno)} l’anno per ${fmtInt(s.anniAmm)} anni, a condizione che l’azienda abbia utili su cui applicarlo. Da confermare con il commercialista.</div>`;
+    document.getElementById('finCard').innerHTML =
+      `<p style="color:var(--ink-2);font-size:13.5px">${intro}</p>` +
+      `<div class="fin"><div class="box"><div class="lab">Acconto in cassa</div><div class="num">${fmtEur(m.acconto)}</div></div><div class="box"><div class="lab">Importo finanziato</div><div class="num">${fmtEur(m.finanziato)}</div></div><div class="box"><div class="lab">Rata mensile</div><div class="num">${fmtEur(m.rata)}</div></div><div class="box"><div class="lab">Beneficio mensile primo anno</div><div class="num">${fmtEur(benMese)}</div></div><div class="box"><div class="lab">Differenza ogni mese</div><div class="num ${netto >= 0 ? 'pos' : 'neg'}">${netto >= 0 ? '+' : '−'}${fmtEur(Math.abs(netto))}</div></div></div>` +
+      `<div class="bars2"><div class="bar-row"><span>Rata</span><div class="track"><div class="fill" style="width:${m.rata / maxBar * 100}%;background:var(--muted)"></div></div><span class="n">${fmtEur(m.rata)}</span></div><div class="bar-row"><span>Beneficio</span><div class="track"><div class="fill" style="width:${benMese / maxBar * 100}%;background:var(--s-save)"></div></div><span class="n">${fmtEur(benMese)}</span></div></div>` +
+      cassa +
+      `<p style="color:var(--muted);font-size:12.5px;margin-top:12px">Il beneficio mensile comprende risparmio in bolletta, energia venduta o condivisa e incentivi dell’anno, al netto della manutenzione. Interessi e spese di incasso sull’intera durata: ${fmtEur(m.interessi)}; spese iniziali: ${fmtEur(m.speseBanca)}. La rata è calcolata a mese commerciale: la banca conteggia i giorni effettivi e la rata reale oscilla di qualche euro.</p>`;
+  }
+
+  function renderTable(m) {
+    const s = state, fin = m.fin;
+    if (isTerra(s)) { renderTableTerra(m); return; }
+    document.getElementById('tableSub').textContent = 'Tutti i flussi in euro' + (m.ivaF === 1 ? ', IVA esclusa' : ', IVA inclusa') + '. La riga evidenziata è l’anno in cui l’investimento è rientrato.';
+    const payIdx = fin ? m.paybackFin : m.paybackCassa;
+    const payYear = payIdx == null ? -1 : Math.ceil(payIdx) || 1;
+    const showAuc = !!s.auc;
+    const cols = 6 + (showAuc ? 1 : 0) + (fin ? 1 : 0) + 2;
+    let h = '<table><thead><tr><th>Anno</th><th>Produzione (kWh)</th><th>Risparmio bolletta</th>' + (showAuc ? '<th>Energia condivisa</th>' : '') + '<th>Vendita in rete</th><th>Incentivi</th><th>Manutenzione</th>' + (fin ? '<th>Rata</th>' : '') + '<th>Flusso netto</th><th>Cumulato</th></tr></thead><tbody>';
+    const esborso = fin ? m.esborsoFin : m.investDaPagare;
+    const esborsoLab = fin ? (m.acconto > 0 ? 'Acconto ' + fmtEur(m.acconto) + ' + spese bancarie ' + fmtEur(m.speseBanca) : 'Spese bancarie iniziali ' + fmtEur(m.speseBanca) + ', nessun acconto') : 'Pagamento dell’impianto' + (m.reddito ? ' al netto del reddito energetico' : '');
+    h += `<tr><td>Oggi</td><td colspan="${cols - 3}" style="text-align:left;color:var(--ink-2)">${esborsoLab}</td><td class="neg">−${fmtEur(esborso)}</td><td class="cum neg">−${fmtEur(esborso)}</td></tr>`;
+    const tot = { prod: 0, risparmio: 0, auc: 0, vendita: 0, inc: 0, om: 0, rata: 0, flusso: -esborso };
+    m.rows.forEach(r => {
+      const fl = fin ? r.flussoFin : r.flussoCassa, cum = fin ? r.cumFin : r.cumCassa;
+      tot.prod += r.prod; tot.risparmio += r.risparmio; tot.auc += r.auc; tot.vendita += r.vendita; tot.inc += r.incentivi; tot.om += r.om; tot.rata += r.rataAnno; tot.flusso += fl;
+      h += `<tr${r.t === payYear ? ' class="pay"' : ''}><td>${r.t}</td><td>${fmtInt(r.prod)}</td><td>${fmtEur(r.risparmio)}</td>${showAuc ? '<td>' + fmtEur(r.auc) + '</td>' : ''}<td>${fmtEur(r.vendita)}</td><td>${r.incentivi ? fmtEur(r.incentivi) : '—'}</td><td class="neg">−${fmtEur(r.om)}</td>${fin ? '<td class="neg">' + (r.rataAnno ? '−' + fmtEur(r.rataAnno) : '—') + '</td>' : ''}<td class="${fl < 0 ? 'neg' : ''}">${fmtEur(fl)}</td><td class="cum${cum < 0 ? ' neg' : ''}">${fmtEur(cum)}</td></tr>`;
+    });
+    h += `</tbody><tfoot><tr><td>Totale ${m.H} anni</td><td>${fmtInt(tot.prod)}</td><td>${fmtEur(tot.risparmio)}</td>${showAuc ? '<td>' + fmtEur(tot.auc) + '</td>' : ''}<td>${fmtEur(tot.vendita)}</td><td>${fmtEur(tot.inc)}</td><td>−${fmtEur(tot.om)}</td>${fin ? '<td>−' + fmtEur(tot.rata) + '</td>' : ''}<td>${fmtEur(tot.flusso)}</td><td>${fmtEur(m.guadagno)}</td></tr></tfoot></table>`;
+    document.getElementById('tableWrap').innerHTML = h;
+  }
+
+  function renderSteps(m) {
+    const s = state, inst = s.installatore || 'l’installatore';
+    let li;
+    if (isTerra(s)) li = [
+      '<b>Terreno e fattibilità</b> — verifica urbanistica (no area agricola, oppure agrivoltaico), vincoli paesaggistici, distanza dalla cabina primaria.',
+      '<b>Connessione</b> — richiesta al distributore e preventivo STMG: costi e tempi dell’allaccio in media tensione.',
+      '<b>Autorizzazione</b> — PAS in area idonea o autorizzazione unica; progetto definitivo con la producibilità certificata.',
+      s.modVendita === 'ferx' ? '<b>Accesso al FER-X</b> — richiesta al GSE per la tariffa a 20 anni (fino a 1 MW senza asta).' : s.modVendita === 'ppa' ? '<b>Contratto PPA</b> — negoziazione con l’acquirente dell’energia, prima del finanziamento.' : '<b>Contratto di vendita a mercato</b> — con un trader o con il ritiro dedicato GSE.',
+      m.fin ? '<b>Project financing</b> — la banca finanzia il ' + fmtInt(100 - s.acconto) + '% sui flussi dell’impianto; serve un DSCR minimo di 1,2–1,3.' : '<b>Capitale proprio</b> — nessun debito: rendimento più basso ma senza vincoli bancari.',
+      '<b>Costruzione, collaudo ed esercizio</b> — 4–6 mesi di cantiere per 1 MW; poi 25–30 anni di produzione con O&M e monitoraggio.'
+    ];
+    else
+    if (isCond(s)) li = [
+      '<b>Presentazione in assemblea</b> — il progetto viene illustrato; si chiede solo il mandato ad andare avanti.',
+      `<b>Sopralluogo tecnico di ${esc(inst)}</b> — i tecnici verificano tetto, quadri e contatore e definiscono impianto e prezzo al centesimo.`,
+      '<b>Assemblea straordinaria</b> — con l’offerta definitiva si delibera l’impianto, la modalità di pagamento e l’adesione al gruppo di autoconsumo.',
+      m.fin ? '<b>Finanziamento intestato al condominio</b> — pratica con la banca del condominio.' : '<b>Ripartizione per millesimi</b> — l’amministratore ripartisce la spesa come per qualunque lavoro straordinario.',
+      '<b>Installazione, allaccio e collaudo</b> — poi la pratica GSE per l’autoconsumo collettivo e la detrazione a ogni famiglia.'
+    ];
+    else if (isCasa(s)) li = [
+      `<b>Sopralluogo gratuito di ${esc(inst)}</b> — verifica di tetto, esposizione, quadro elettrico e contatore.`,
+      '<b>Offerta definitiva</b> — prezzo, tempi e garanzie nero su bianco; questo piano viene aggiornato con i numeri finali.',
+      m.fin ? '<b>Finanziamento</b> — rata mensile che si confronta con il risparmio.' : '<b>Pagamento</b> — a stati di avanzamento, come da offerta.',
+      '<b>Pratiche</b> — comunicazione al Comune, connessione con il distributore e GSE: le segue l’installatore.',
+      '<b>Installazione e collaudo</b> — in genere 1–2 giorni di lavoro; poi la detrazione nella dichiarazione dei redditi.'
+    ];
+    else li = [
+      `<b>Sopralluogo tecnico di ${esc(inst)}</b> — verifica di copertura, cabina, quadri e potenza disponibile.`,
+      '<b>Offerta definitiva</b> — con la producibilità certificata, i moduli iscritti al registro ENEA e il contratto di manutenzione.',
+      '<b>Verifica incentivi con il commercialista</b> — iperammortamento, Nuova Sabatini e bandi aperti; perizia asseverata se richiesta.',
+      m.fin ? '<b>Finanziamento o leasing</b> — pratica bancaria, con la Sabatini prenotata prima della delibera.' : '<b>Pagamento a stati di avanzamento</b> — come da offerta.',
+      '<b>Installazione, connessione e collaudo</b> — poi comunicazioni GSE e Agenzia delle Entrate per gli incentivi.'
+    ];
+    document.getElementById('steps').innerHTML = li.map(x => `<li>${x}</li>`).join('');
+  }
+
+  function renderFaq(m) {
+    const s = state, y1 = m.rows[0];
+    const items = [];
+    if (isTerra(s)) { renderFaqTerra(m); return; }
+    items.push(['Quanto ci mette a ripagarsi?', m.fin
+      ? `Con il finanziamento non c’è niente da "ripagare" in senso stretto: la rata (${fmtEur(m.rata)} al mese) è ${m.nettoY1Fin >= 0 ? 'più bassa' : 'più alta'} dei benefici che l’impianto produce ogni mese. ${m.nettoY1Fin >= 0 ? 'Si è in attivo fin dal primo anno' : 'La differenza è di ' + fmtEur(-m.nettoY1Fin) + ' l’anno nei primi ' + fmtInt(s.durata / 12) + ' anni'}. Pagando invece tutto in cassa, i ${fmtEur(m.investDaPagare)} rientrano in <b>${fmtYears(m.paybackCassa)}</b>.`
+      : `Pagando in cassa, i ${fmtEur(m.investDaPagare)} rientrano in <b>${fmtYears(m.paybackCassa)}</b> grazie a risparmi e incentivi. Dopo, per tutta la vita dell’impianto (25–30 anni), è guadagno netto.`]);
+    if (isCond(s)) {
+      items.push(['La detrazione fiscale arriva al condominio?', `No. La detrazione (${fmtEur(y1.detr)} l’anno per 10 anni) non entra nella cassa condominiale: l’amministratore comunica a ogni famiglia la sua quota di spesa e ciascuno la scarica dalle proprie tasse. Chi ha lì l’abitazione principale scarica il 50%, gli altri il 36%; chi paga poche tasse può non riuscire a usarla tutta. Per questo la pagina mostra sia il totale sia la sola cassa condominiale.`]);
+      items.push(['E se un condomino non paga la sua quota?', 'Il finanziamento è intestato al condominio e la rata entra nelle spese ordinarie, ripartite per millesimi come la bolletta. Chi non paga viene gestito con gli strumenti soliti dell’amministratore, come per qualunque spesa comune. E il risparmio in bolletta abbassa le spese di tutti.']);
+      items.push(['E se vendo casa?', 'L’impianto è un bene comune, come l’ascensore o la facciata. Chi compra subentra nei benefici e nella quota, e un palazzo con spese energetiche più basse si vende meglio.']);
+      items.push(['Come funziona il gruppo di autoconsumo collettivo (AUC)?', `Il condominio è il referente verso il GSE; ogni famiglia aderisce con una firma, senza lavori in casa e senza cambiare fornitore. Quando il tetto produce più di quanto le parti comuni consumano, l’energia va in rete e, se nello stesso momento gli appartamenti la consumano, il GSE riconosce un premio per 20 anni (${fmtDec(s.premio, 3)} €/kWh più ${fmtDec(s.restituzione, 3)} di restituzione ARERA). Come dividere il premio si decide in assemblea.`]);
+    }
+    if (isCasa(s)) {
+      items.push(['Serve la batteria?', s.batteria > 0 ? `Nel piano c’è una batteria da ${fmtDec(s.batteria, 1)} kWh: porta l’autoconsumo al ${fmtInt(m.quota * 100)}% (senza sarebbe il ${fmtInt(m.quotaBase * 100)}%). Dopo 10–12 anni va sostituita: il modello lo conteggia nell’anno 12.` : `Senza batteria il ${fmtInt(m.quota * 100)}% dell’energia viene usata subito. La batteria conviene quando si consuma soprattutto la sera: prova a inserirne una nelle variabili e guarda come cambiano rientro e guadagno.`]);
+      items.push(['Come si ottiene la detrazione?', 'Pagando con bonifico "parlante" e conservando fatture e documenti: la quota si scarica nella dichiarazione dei redditi in 10 anni. Chi paga poche tasse può non riuscire a usarla tutta: da verificare con il CAF o il commercialista.']);
+      items.push(['E se un giorno cambio casa?', 'L’impianto resta con la casa e ne aumenta il valore e la classe energetica. Le rate di detrazione non ancora godute passano a chi compra, salvo accordo diverso.']);
+    }
+    if (isAz(s)) {
+      items.push(['Come funziona l’iperammortamento?', `Il costo dell’impianto si deduce dal reddito maggiorato del ${fmtInt(s.iperMagg)}%: per ogni euro investito se ne deducono ${fmtDec(1 + s.iperMagg / 100, 2)}. Con un’aliquota del ${fmtInt(s.aliquota)}% il risparmio è di circa ${fmtEur(m.iperTot)}, spalmato sugli anni di ammortamento. Servono moduli iscritti al registro ENEA (categoria B o C), un impianto entro il 105% del fabbisogno, una perizia tecnica e la certificazione contabile. Il decreto attuativo era ancora atteso a metà 2026: da verificare con il commercialista.`]);
+      items.push(['Posso cumulare più incentivi?', 'Sì, entro limiti: iperammortamento e Nuova Sabatini sono cumulabili; i contributi a fondo perduto vanno verificati caso per caso (il bando lombardo è cumulabile con l’iperammortamento fino al 100% dei costi). La tariffa premio CER si riduce se c’è un contributo in conto capitale.']);
+      items.push(['Meglio finanziamento, leasing o noleggio?', 'Il piano confronta cassa e finanziamento. Il leasing dà accesso alla Sabatini come il finanziamento; il noleggio operativo azzera l’investimento con un canone deducibile, ma senza iperammortamento. Chiedi all’installatore anche la proposta di noleggio per confrontarla.']);
+    }
+    items.push(['Chi fa la manutenzione? E le garanzie?', `Un impianto fotovoltaico non ha parti in movimento: la manutenzione è un controllo periodico e la pulizia dei pannelli. Nel piano è conteggiata una voce di <b>${fmtEur(s.om)} l’anno</b> per manutenzione e assicurazione. Le garanzie tipiche: 25–30 anni sui pannelli, 10 sugli inverter, 2 sul resto; la produzione si controlla da un’app.`]);
+    items.push(['Cosa succede se il prezzo dell’energia scende?', `Il piano usa ${fmtDec(m.pEvit * m.ivaF, 3)} €/kWh, cioè quanto si paga davvero oggi, con un rincaro del ${fmtDec(s.rincaro, 1)}% l’anno. Prova lo scenario "prudente" o metti il rincaro a zero nelle variabili e guarda come cambiano i numeri: il tetto produce comunque energia che non si compra.`]);
+    document.getElementById('faq').innerHTML = items.map((it, i) => `<details${i === 0 ? ' open' : ''}><summary>${it[0]}</summary><div class="a">${it[1]}</div></details>`).join('');
+  }
+
+  function renderAssump(m) {
+    const s = state;
+    if (isTerra(s)) { renderAssumpTerra(m); return; }
+    const tag = { todo: '<span class="tag todo">da confermare</span>', norm: '<span class="tag norm">normativa</span>', calc: '<span class="tag bill">calcolato</span>', prev: '<span class="tag bill">preventivo</span>', bill: '<span class="tag bill">bolletta</span>' };
+    const col1 = [
+      ['Potenza impianto' + (s.preventivo ? tag.prev : ''), fmtDec(s.kwp, 2) + ' kWp'],
+      ['Costo chiavi in mano (IVA escl.)' + (s.preventivo ? tag.prev : tag.todo), fmtEur(s.costo)],
+      ['Costi esclusi (IVA escl.)' + tag.todo, fmtEur(s.extra)],
+      s.batteria > 0 ? ['Batteria ' + fmtDec(s.batteria, 1) + ' kWh (IVA escl.)', fmtEur(s.costoBatteria)] : null,
+      ['IVA', (isAz(s) && s.ivaRec) ? fmtInt(s.iva) + '% recuperabile' : fmtInt(s.iva) + '%'],
+      ['Investimento totale', fmtEur(m.invest)],
+      ['Producibilità' + tag.todo, fmtInt(s.resa) + ' kWh/kWp'],
+      ['Calo di resa annuo', fmtDec(s.degrado, 2) + '%'],
+      ['Manutenzione e assicurazione' + tag.todo, fmtEur(s.om) + '/anno (+2%/anno)'],
+      ['Orizzonte', m.H + ' anni']
+    ].filter(Boolean);
+    const col2 = [
+      ['Consumo annuo' + tag.bill, fmtInt(s.consumo) + ' kWh' + (s.aumento ? ' → ' + fmtInt(m.consumo) + ' previsti' : '')],
+      ['Fasce F1 / F2 / F3' + tag.bill, fmtInt(s.f1) + ' / ' + fmtInt(s.f2) + ' / ' + fmtInt(s.f3) + '%'],
+      ['Spesa annua (IVA escl.)' + tag.bill, fmtEur(s.spesa)],
+      ['Quote fisse non riducibili' + tag.bill, fmtEur(s.fissa)],
+      ['Prezzo energia evitabile (media annua)', fmtDec(m.pEvit, 4) + ' €/kWh' + (m.ivaF === 1 ? '' : ' + IVA')],
+      ['Rincaro energia', fmtDec(s.rincaro, 1) + '%/anno'],
+      ['Profilo mensile', PROFILI[s.profilo].label],
+      ['Energia consumata sul posto' + (s.autoMode === 'calc' ? tag.calc : tag.todo), fmtInt(m.quota * 100) + '%'],
+      s.auc ? ['Eccesso condiviso', fmtInt(s.condivisa) + '%'] : null,
+      s.auc ? ['Tariffa premio GSE (20 anni)' + tag.norm, fmtDec(s.premio, 3) + ' €/kWh'] : null,
+      s.auc ? ['Restituzione ARERA' + tag.norm, fmtDec(s.restituzione, 3) + ' €/kWh'] : null,
+      ['Vendita eccesso in rete', fmtDec(s.vendita, 3) + ' €/kWh'],
+      m.detrRate > 0 ? ['Detrazione fiscale (10 rate)' + tag.norm, fmtDec(m.detrRate, 1) + '%'] : null,
+      m.iperTot > 0 ? ['Iperammortamento' + tag.norm + tag.todo, fmtInt(s.iperMagg) + '% × aliquota ' + fmtInt(s.aliquota) + '% su ' + fmtInt(s.anniAmm) + ' anni'] : null,
+      m.sabatini > 0 ? ['Nuova Sabatini green' + tag.norm, '10% dell’investimento'] : null,
+      m.fondo > 0 ? ['Contributo a fondo perduto' + tag.todo, fmtInt(s.fondoPerduto) + '%'] : null,
+      m.contoTermico > 0 ? ['Conto Termico 3.0' + tag.todo, fmtInt(s.contoTermico) + '%'] : null,
+      m.reddito > 0 ? ['Reddito energetico' + tag.todo, fmtEur(m.reddito)] : null,
+      ['Pagamento', m.fin ? 'acconto ' + fmtInt(s.acconto) + '% · finanziati ' + fmtEur(m.finanziato) : 'tutto in cassa'],
+      m.fin ? ['Condizioni finanziamento' + tag.todo, 'tasso ' + fmtDec(s.tasso, 2) + '% · ' + fmtInt(s.durata) + ' mesi · istruttoria ' + fmtEur(s.istruttoria) + ' · imposta ' + fmtDec(s.imposta, 2) + '% · ' + fmtDec(s.incasso, 2) + ' €/rata'] : null,
+      isCond(s) ? ['Famiglie (unità abitative)', fmtInt(s.unita)] : null
+    ].filter(Boolean);
+    const dl = rows => '<dl>' + rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('') + '</dl>';
+    document.getElementById('assump').innerHTML = `<div><h3>Impianto</h3>${dl(col1)}</div><div><h3>Energia, incentivi e pagamento</h3>${dl(col2)}</div>`;
+    const src = [
+      s.preventivo ? `Preventivo ${esc(s.installatore || '')} ${esc(s.preventivo)}.` : 'Prezzo impianto: stima da confermare con il preventivo dell’installatore.',
+      'Consumi e spesa: bolletta del cliente (consumo annuo, fasce F1/F2/F3, spesa annua).',
+      'Autoconsumo: calcolo ora per ora su un anno tipo, incrociando il profilo mensile scelto, le fasce orarie della bolletta e l’irraggiamento della zona (giornate serene e nuvolose).',
+      'Bonus casa 50% / 36% in 10 rate, tetto 96.000 €: <a href="https://www.enpal.com/it/fotovoltaico/bonus-impianto-fotovoltaico" target="_blank" rel="noopener">guida 2026</a>.',
+      'Iperammortamento 2026 (L. 199/2025), moduli registro ENEA, limite 105%: <a href="https://www.enpal.com/it/fotovoltaico/iperammortamento" target="_blank" rel="noopener">guida per le imprese</a>; Transizione 5.0 terminata il 31/12/2025: <a href="https://biblus.acca.it/transizione-5-0-credito-imposta-efficientamento-energetico/" target="_blank" rel="noopener">BibLus</a>.',
+      'Nuova Sabatini green: <a href="https://www.myenergy.it/blog/incentivi-e-agevolazioni/nuova-sabatini-green-fotovoltaico-2026/" target="_blank" rel="noopener">requisiti e contributo 2026</a>. Bando Lombardia Linea Impresa Efficiente: <a href="https://www.myenergy.it/blog/incentivi-e-agevolazioni/bando-linea-impresa-efficiente-2026-come-ottenere-fino-al-45-a-fondo-perduto-sul-fotovoltaico-aziendale/" target="_blank" rel="noopener">guida</a>. ZES Unica: <a href="https://biblus.acca.it/credito-di-imposta-zes-unica/" target="_blank" rel="noopener">BibLus</a>.',
+      'Conto Termico 3.0 e fotovoltaico: <a href="https://www.naturalnzeb.it/fotovoltaico-conto-termico-3-0-guida/" target="_blank" rel="noopener">guida</a>. Reddito energetico: <a href="https://www.myenergy.it/blog/incentivi-e-agevolazioni/reddito-energetico-nazionale-2026-requisiti-importi-e-stato-del-bando/" target="_blank" rel="noopener">stato del bando 2026</a>.',
+      'Tariffa premio energia condivisa (DM CACER) e PNRR 40%: <a href="https://www.reteagevolazioni.it/comunita-energetiche-rinnovabli-incentivi/" target="_blank" rel="noopener">tariffa 2026–2027</a>, <a href="https://www.gse.it/servizi-per-te/news/pnrr-contributi-per-le-cer-estesi-anche-ai-comuni-fino-a-50000-abitanti" target="_blank" rel="noopener">GSE</a>.',
+      'Ritiro dedicato e fine dello scambio sul posto (delibera ARERA 78/2025): <a href="https://www.enpal.com/it/fotovoltaico/scambio-sul-posto" target="_blank" rel="noopener">guida 2026</a>.'
+    ];
+    document.getElementById('sources').innerHTML = '<b>Fonti</b><ul>' + src.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  }
+
+  /* ---------------- Impianto a terra ---------------- */
+  function renderHeadTerra(m) {
+    const s = state;
+    document.getElementById('dateLine').textContent = 'Piano del ' + dataOggi + (s.consulente ? ' · a cura di ' + s.consulente : '');
+    document.getElementById('eyebrow').textContent = ['Impianto a terra', s.localita, fmtDec(s.kwp / 1000, 2) + ' MWp', s.installatore ? 'EPC ' + s.installatore : ''].filter(Boolean).join(' · ');
+    document.getElementById('title').textContent = 'Piano Fotovoltaico ' + nomeCliente(s);
+    const pill = document.getElementById('pill');
+    pill.textContent = s.preventivo ? 'Preventivo ' + s.preventivo : 'Stima preliminare';
+    pill.className = 'pill' + (s.preventivo ? ' ok' : '');
+    document.getElementById('lede').innerHTML = 'Un impianto a terra non fa risparmiare una bolletta: <b>vende energia</b> per 25–30 anni. Questa pagina mostra quanto costa realizzarlo, quanto incassa ogni anno, cosa restano dopo costi, tasse e banca, e che rendimento dà al capitale investito. <span class="hint-vars">Ogni numero si aggiorna cambiando le variabili <span class="only-desktop">nel pannello a sinistra</span><a class="only-mobile" href="#variabili">in fondo alla pagina</a>.</span>';
+    document.getElementById('printHead').innerHTML = `<span><b>Piano Fotovoltaico · ${esc(nomeCliente(s))}</b></span><span>${esc(s.consulente || '')}${s.telefono ? ' · ' + esc(s.telefono) : ''}${s.email ? ' · ' + esc(s.email) : ''} · ${dataOggi}</span>`;
+  }
+  function renderFactsTerra(m) {
+    const s = state, y1 = m.rows[0];
+    const facts = [
+      [fmtDec(s.kwp / 1000, 2) + ' MWp', 'di potenza' + (s.tracker ? ', con inseguitori' : ', struttura fissa')],
+      [fmtInt(y1.prod / 1000) + ' MWh', 'prodotti il primo anno'],
+      [fmtEur(y1.ricavi), 'di ricavi il primo anno'],
+      [fmtDec(s.ettari, 1) + ' ha', 'di terreno'],
+      [fmtEur(m.invest), 'di investimento']
+    ];
+    document.getElementById('facts').innerHTML = facts.map(f => `<div class="fact"><b>${f[0]}</b><span>${f[1]}</span></div>`).join('');
+    let html = '';
+    for (let i = 0; i < 400; i++) html += '<i></i>';
+    document.getElementById('mosaic').innerHTML = html;
+  }
+  function renderKpisTerra(m) {
+    const s = state, y1 = m.rows[0];
+    const vend = s.modVendita === 'ferx' ? 'tariffa FER-X ' + fmtInt(s.ferx) + ' €/MWh per 20 anni' : s.modVendita === 'ppa' ? 'PPA a ' + fmtInt(s.ppa) + ' €/MWh per ' + fmtInt(s.durataPPA) + ' anni' : 'vendita a mercato a ' + fmtInt(s.prezzoMercato) + ' €/MWh';
+    const tiles = m.fin ? [
+      { hero: true, label: 'Rendimento annuo del capitale investito (TIR equity)', value: m.irrEquity == null ? '—' : fmtPct(m.irrEquity * 100, 1), sub: 'con ' + fmtEur(m.acconto) + ' di capitale proprio (' + fmtInt(s.acconto) + '%) e ' + fmtEur(m.finanziato) + ' di debito · ' + vend },
+      { label: 'Investimento totale', value: fmtEur(m.invest), sub: fmtEur(s.costo / s.kwp) + '/kWp di impianto + ' + fmtEur(s.extra) + ' di sviluppo e connessione, IVA esclusa' },
+      { label: 'Cassa netta il primo anno', value: fmtEur(y1.flussoFin), sub: 'ricavi ' + fmtEur(y1.ricavi) + ' − costi ' + fmtEur(y1.opex) + ' − tasse ' + fmtEur(y1.tasseFin) + ' − rata ' + fmtEur(y1.rataAnno) },
+      { label: 'DSCR minimo', value: m.dscrMin == null ? '—' : fmtDec(m.dscrMin, 2), sub: 'cassa disponibile diviso servizio del debito: le banche chiedono 1,20–1,30' },
+      { label: 'Valore attuale netto (VAN)', value: fmtEur(m.van), sub: 'al ' + fmtDec(s.attualizzazione, 1) + '% · TIR di progetto ' + (m.irr == null ? '—' : fmtPct(m.irr * 100, 1)) + ' · LCOE ' + fmtDec(m.lcoe, 0) + ' €/MWh' }
+    ] : [
+      { hero: true, label: 'Rendimento annuo dell’investimento (TIR)', value: m.irr == null ? '—' : fmtPct(m.irr * 100, 1), sub: 'tutto con capitale proprio · ' + vend },
+      { label: 'Investimento totale', value: fmtEur(m.invest), sub: fmtEur(s.costo / s.kwp) + '/kWp di impianto + ' + fmtEur(s.extra) + ' di sviluppo e connessione, IVA esclusa' },
+      { label: 'Cassa netta il primo anno', value: fmtEur(y1.flussoCassa), sub: 'ricavi ' + fmtEur(y1.ricavi) + ' − costi ' + fmtEur(y1.opex) + ' − tasse ' + fmtEur(y1.tasseCassa) },
+      { label: 'L’investimento rientra in', value: fmtYears(m.paybackCassa), sub: 'poi è guadagno per il resto della vita dell’impianto' },
+      { label: 'Valore attuale netto (VAN)', value: fmtEur(m.van), sub: 'al ' + fmtDec(s.attualizzazione, 1) + '% · LCOE ' + fmtDec(m.lcoe, 0) + ' €/MWh' }
+    ];
+    document.getElementById('kpis').innerHTML = tiles.map(t => `<div class="kpi${t.hero ? ' hero' : ''}"><div class="k-label">${t.label}</div><div class="k-value">${t.value}</div><div class="k-sub">${t.sub}</div></div>`).join('');
+  }
+  function renderStoryTerra(m) {
+    const s = state, y1 = m.rows[0];
+    const p1 = `L’impianto da <b>${fmtDec(s.kwp / 1000, 2)} MWp</b>${s.tracker ? ' con inseguitori solari' : ''} produce circa <b>${fmtInt(y1.prod / 1000)} MWh l’anno</b> (${fmtInt(s.resa)} kWh per kWp, disponibilità ${fmtDec(s.disponibilita, 1)}%), l’equivalente del consumo di circa ${fmtInt(y1.prod / 2700)} famiglie. Costa <b>${fmtEur(m.invest)}</b>: ${fmtEur(s.costo)} di impianto (${fmtEur(s.costo / s.kwp)}/kWp) più ${fmtEur(s.extra)} di sviluppo, autorizzazioni e connessione.`;
+    let p2;
+    if (s.modVendita === 'ferx') p2 = `L’energia viene venduta con la <b>tariffa FER-X di ${fmtInt(s.ferx)} €/MWh, fissa per 20 anni</b>: il GSE integra se il mercato paga meno e trattiene se paga di più, quindi il ricavo è prevedibile. Dal 21° anno l’energia va a mercato a circa ${fmtInt(s.prezzoMercato)} €/MWh.`;
+    else if (s.modVendita === 'ppa') p2 = `L’energia viene venduta con un <b>contratto PPA a ${fmtInt(s.ppa)} €/MWh per ${fmtInt(s.durataPPA)} anni</b>, poi a mercato a circa ${fmtInt(s.prezzoMercato)} €/MWh.`;
+    else p2 = `L’energia viene venduta <b>a mercato</b>: il solare cattura oggi circa <b>${fmtInt(s.prezzoMercato)} €/MWh</b> (meno del PUN medio, perché produce quando producono tutti), con una variazione ipotizzata del ${fmtDec(s.rincaroMercato, 1)}% l’anno. È lo scenario con più rischio: prova anche la tariffa FER-X per confronto.`;
+    p2 += ` Il primo anno entrano <b>${fmtEur(y1.ricavi)}</b>; i costi di gestione sono <b>${fmtEur(y1.opex)}</b> (O&M, assicurazione, terreno, IMU e gestione) e le tasse sull’utile <b>${fmtEur(m.fin ? y1.tasseFin : y1.tasseCassa)}</b>.`;
+    let p3;
+    if (m.fin) {
+      p3 = `Con <b>${fmtEur(m.acconto)} di capitale proprio</b> (${fmtInt(s.acconto)}%) e un debito di <b>${fmtEur(m.finanziato)}</b> in ${fmtInt(s.durata / 12)} anni al ${fmtDec(s.tasso, 2)}%, la rata è di ${fmtEur(y1.rataAnno)} l’anno. Dopo costi, tasse e rata restano <b>${fmtEur(y1.flussoFin)}</b> il primo anno` + (m.primoAnnoNeg ? `, ma dall’anno ${m.primoAnnoNeg} la cassa va sotto zero: servono più capitale proprio o un debito più lungo` : '') + `. Il DSCR minimo è <b>${m.dscrMin == null ? '—' : fmtDec(m.dscrMin, 2)}</b>. Finito il debito restano circa <b>${fmtEur(m.rows[Math.min(m.rows.length - 1, Math.ceil(s.durata / 12))].flussoCassa)} l’anno</b>. In ${m.H} anni il capitale rende il <b>${m.irrEquity == null ? '—' : fmtPct(m.irrEquity * 100, 1)}</b> annuo, con un guadagno netto di <b>${fmtEur(m.guadagno)}</b>.`;
+    } else {
+      p3 = `Pagando tutto con capitale proprio, l’investimento rientra in <b>${fmtYears(m.paybackCassa)}</b> e rende il <b>${m.irr == null ? '—' : fmtPct(m.irr * 100, 1)}</b> annuo; in ${m.H} anni il guadagno netto è di <b>${fmtEur(m.guadagno)}</b>. Ogni MWh prodotto costa <b>${fmtDec(m.lcoe, 0)} €</b> (LCOE) contro un prezzo di vendita di ${fmtInt(y1.prezzo)}.`;
+    }
+    let av = '';
+    if (m.avvisi.length) av = `<div class="cassa noprint" style="margin-top:12px"><b>Da controllare:</b><ul style="margin:6px 0 0;padding-left:18px">${m.avvisi.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
+    document.getElementById('story').innerHTML = `<h2>In parole semplici</h2><p>${p1}</p><p>${p2}</p><p>${p3}</p><p style="color:var(--muted);font-size:13px">Ogni anno si evitano circa ${fmtDec(m.co2, 0)} tonnellate di CO₂.</p>${av}`;
+  }
+  function renderWhyTerra(m) {
+    const s = state, y1 = m.rows[0];
+    document.getElementById('whyTitle').textContent = 'I tre punti da capire';
+    document.getElementById('whySub').textContent = 'Cosa decide davvero il risultato di un impianto a terra.';
+    const cards = [
+      ['Il prezzo di vendita è tutto', s.modVendita === 'ferx' ? 'Con il FER-X il ricavo è fisso per 20 anni: ' + fmtInt(s.ferx) + ' €/MWh. È la scelta che le banche preferiscono, perché toglie il rischio di mercato.' : 'A mercato il solare vale meno del PUN medio (prezzo di cattura) e il divario cresce con l’aumentare degli impianti: ogni euro/MWh in meno vale ' + fmtEur(y1.prod / 1000) + ' l’anno.'],
+      ['Il terreno deve essere idoneo', 'Sui terreni agricoli i moduli a terra sono vietati dal 2024 (confermato dalla Corte Costituzionale nel 2026): restano aree industriali, cave, discariche, aree idonee regionali, oppure l’agrivoltaico con pannelli sollevati. Verificarlo prima di ogni altra cosa.'],
+      ['La banca guarda il DSCR', m.fin ? 'Ogni anno la cassa dopo costi e tasse deve coprire la rata con margine: il minimo qui è ' + (m.dscrMin == null ? '—' : fmtDec(m.dscrMin, 2)) + '. Con più capitale proprio o un debito più lungo il margine sale.' : 'Senza debito il rendimento è il TIR di progetto (' + (m.irr == null ? '—' : fmtPct(m.irr * 100, 1)) + '). Con un project financing al 70% il rendimento del capitale proprio di solito sale: prova nelle variabili.']
+    ];
+    document.getElementById('why').innerHTML = cards.map((c, i) => `<div class="card why"><div class="why-n">${i + 1}</div><h3>${c[0]}</h3><p>${c[1]}</p></div>`).join('');
+  }
+  function renderBillTerra(m) {
+    const s = state, y1 = m.rows[0];
+    document.getElementById('billTitle').textContent = 'Entrate e uscite, primo anno';
+    document.getElementById('billSub').textContent = 'Ricavi dalla vendita dell’energia contro costi di gestione, tasse' + (m.fin ? ' e rata del debito' : '') + ', IVA esclusa.';
+    document.getElementById('legendBill').innerHTML = '<span><i style="background:var(--s-save)"></i>Ricavi</span><span><i style="background:var(--s-bill)"></i>Costi di gestione</span><span><i style="background:var(--muted)"></i>Tasse</span>' + (m.fin ? '<span><i style="background:var(--s-pv)"></i>Rata</span>' : '');
+    const W = 460, H = 250, padL = 16, padR = 16, padT = 30, padB = 34;
+    const uscite = [{ lab: 'Costi', v: y1.opex, c: 'var(--s-bill)' }, { lab: 'Tasse', v: m.fin ? y1.tasseFin : y1.tasseCassa, c: 'var(--muted)' }];
+    if (m.fin) uscite.push({ lab: 'Rata', v: y1.rataAnno, c: 'var(--s-pv)' });
+    const totU = uscite.reduce((a, u) => a + u.v, 0);
+    const max = Math.max(y1.ricavi, totU, 1) * 1.1;
+    const innerH = H - padT - padB, base = H - padB;
+    const bw = 120, gap = 60, x0 = (W - (2 * bw + gap)) / 2;
+    let out = '';
+    const h1 = y1.ricavi / max * innerH;
+    out += `<path d="${topBar(x0, base - h1, bw, h1, 4)}" fill="var(--s-save)"></path><text x="${x0 + bw / 2}" y="${base - h1 - 8}" text-anchor="middle" class="val strong">${fmtEur(y1.ricavi)}</text><text x="${x0 + bw / 2}" y="${base + 20}" text-anchor="middle">Ricavi</text><rect class="hit" x="${x0 - 10}" y="${padT}" width="${bw + 20}" height="${innerH + 10}" data-tip="<b>Ricavi</b><br>${fmtInt(y1.prod / 1000)} MWh × ${fmtInt(y1.prezzo)} €/MWh"></rect>`;
+    let yy = base; const x1 = x0 + bw + gap;
+    uscite.forEach((u, i) => { const h = u.v / max * innerH; yy -= h; out += `<rect x="${x1}" y="${yy}" width="${bw}" height="${h}" fill="${u.c}"${i === uscite.length - 1 ? ' rx="4"' : ''}></rect><rect class="hit" x="${x1}" y="${yy}" width="${bw}" height="${h}" data-tip="<b>${u.lab}</b><br>${fmtEur(u.v)}"></rect>`; });
+    out += `<text x="${x1 + bw / 2}" y="${yy - 8}" text-anchor="middle" class="val strong">${fmtEur(totU)}</text><text x="${x1 + bw / 2}" y="${base + 20}" text-anchor="middle">Uscite</text>`;
+    const netto = y1.ricavi - totU;
+    out += `<line class="axis" x1="${padL}" x2="${W - padR}" y1="${base}" y2="${base}"></line><text x="${x0 + bw + gap / 2}" y="${padT + 4}" text-anchor="middle" class="val" style="fill:${netto >= 0 ? 'var(--good-text)' : 'var(--critical)'}">${netto >= 0 ? '+' : '−'}${fmtEur(Math.abs(netto))} netti</text>`;
+    const el = document.getElementById('chartBill');
+    el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ricavi ${fmtEur(y1.ricavi)} contro uscite ${fmtEur(totU)} il primo anno">${out}</svg>`;
+    bindTips(el);
+  }
+  function renderMonthTerra(m) {
+    const s = state, y1 = m.rows[0];
+    document.getElementById('legendMonth').innerHTML = '<span><i style="background:var(--s-pv)"></i>Produzione mensile (MWh)</span>';
+    const W = 460, H = 250, padL = 44, padR = 12, padT = 18, padB = 30;
+    const prod = prodShape(s).map(v => v * y1.prod / 1000);
+    const max = Math.max.apply(null, prod) * 1.12;
+    const innerW = W - padL - padR, innerH = H - padT - padB, base = H - padB;
+    const step = niceStep(max, 4);
+    let out = '';
+    for (let v = 0; v <= max; v += step) { const y = base - v / max * innerH; out += `<line class="grid" x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}"></line><text x="${padL - 6}" y="${y + 4}" text-anchor="end">${fmtInt(v)}</text>`; }
+    const slot = innerW / 12, bw = slot * 0.62;
+    prod.forEach((v, i) => { const h = v / max * innerH, x = padL + i * slot + (slot - bw) / 2; out += `<path d="${topBar(x, base - h, bw, h, 3)}" fill="var(--s-pv)"></path><text x="${padL + i * slot + slot / 2}" y="${base + 18}" text-anchor="middle">${MONTHS[i]}</text><rect class="hit" x="${padL + i * slot}" y="${padT}" width="${slot}" height="${innerH}" data-tip="<b>${MONTHS[i]}</b><br>${fmtInt(v)} MWh · ${fmtEur(v * y1.prezzo)}"></rect>`; });
+    out += `<line class="axis" x1="${padL}" x2="${W - padR}" y1="${base}" y2="${base}"></line>`;
+    const el = document.getElementById('chartMonth');
+    el.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Produzione mensile stimata in MWh">${out}</svg>`;
+    bindTips(el);
+    document.getElementById('monthNote').textContent = 'Distribuzione mensile tipica della zona ' + s.zona + ': tra giugno e luglio si produce circa il doppio che a dicembre. La disponibilità del ' + fmtDec(s.disponibilita, 1) + '% tiene conto di fermi e limitazioni di rete.';
+  }
+  function renderIncTerra(m) {
+    const s = state, y1 = m.rows[0];
+    const item = (st, title, val, txt) => `<div class="it"><span class="st ${st}">${st === 'on' ? 'nel piano' : st === 'off' ? 'disponibile' : st === 'chk' ? 'da verificare' : 'non spetta'}</span><div><h3>${title}${val ? '<span>' + val + '</span>' : ''}</h3><p>${txt}</p></div></div>`;
+    const on = [], na = [];
+    const txtF = 'Decreto FER-X transitorio: per impianti fino a 1 MW accesso diretto senza asta con tariffa di 77 €/MWh (ARERA 339/2025), +10 €/MWh al Nord, per 20 anni, con contratto per differenza a due vie. Sopra 1 MW si partecipa alle aste. Alternativa: ritiro dedicato GSE al prezzo zonale orario o al minimo garantito (47,5 €/MWh nel 2026).';
+    on.push(item(s.modVendita === 'ferx' ? 'on' : 'off', 'Tariffa FER-X', s.modVendita === 'ferx' ? fmtInt(s.ferx) + ' €/MWh × 20 anni' : '', txtF));
+    if (s.modVendita !== 'ferx') on.push(item('on', s.modVendita === 'ppa' ? 'PPA + mercato' : 'Vendita a mercato', fmtInt(y1.prezzo) + ' €/MWh il primo anno', 'Energia venduta tramite trader o ritiro dedicato GSE. Il prezzo di cattura del solare è più basso del PUN medio (82% a giugno 2026) e tende a scendere quando cresce il solare in rete.'));
+    on.push(item('chk', 'Contributi a fondo perduto', '', 'ZES Unica nel Mezzogiorno (credito d’imposta fino al 60% per investimenti produttivi, da verificare per impianti di sola vendita); bandi regionali per aree industriali dismesse. Non conteggiati nel piano: se ottenuti, riducono l’investimento.'));
+    na.push(item('na', 'Iperammortamento 2026', '', 'Riservato agli impianti in autoconsumo dell’impresa (entro il 105% del fabbisogno): non vale per un impianto che vende tutta l’energia.'));
+    na.push(item('na', 'Bonus casa, Conto Termico, reddito energetico', '', 'Misure per case, condomini ed edifici: non riguardano gli impianti a terra.'));
+    na.push(item('na', 'Scambio sul posto', '', 'Chiuso ai nuovi impianti dal 2025.'));
+    document.getElementById('incSub').textContent = 'Come viene pagata l’energia e cosa spetta a un impianto a terra nel 2026.';
+    document.getElementById('incList').innerHTML = on.join('');
+    document.getElementById('incNa').innerHTML = na.join('');
+  }
+  function renderFinTerra(m) {
+    const s = state, y1 = m.rows[0];
+    document.getElementById('finTitle').textContent = 'Il project financing';
+    document.getElementById('finSub').textContent = 'La banca finanzia una parte dell’investimento e si ripaga con i flussi dell’impianto. Il capitale proprio si regola nelle variabili.';
+    const cassaDisp = y1.ebitda - y1.tasseFin;
+    const maxBar = Math.max(cassaDisp, y1.rataAnno, 1);
+    const intro = m.fin
+      ? `Debito di ${fmtEur(m.finanziato)} (${fmtInt(100 - s.acconto)}% dell’investimento) in ${fmtInt(s.durata / 12)} anni al ${fmtDec(s.tasso, 2)}%, costi di strutturazione ${fmtEur(m.speseBanca)}. Capitale proprio: ${fmtEur(m.acconto)}.`
+      : `Stai guardando lo scenario a solo capitale proprio. Per confronto, con un debito di ${fmtEur(m.invest * 0.7)} (70%) in ${fmtInt(s.durata / 12)} anni al ${fmtDec(s.tasso, 2)}% il capitale proprio scenderebbe a ${fmtEur(m.invest * 0.3)}: imposta "Debito + capitale" nelle variabili per vedere i numeri.`;
+    document.getElementById('finCard').innerHTML =
+      `<p style="color:var(--ink-2);font-size:13.5px">${intro}</p>` +
+      `<div class="fin"><div class="box"><div class="lab">Capitale proprio</div><div class="num">${fmtEur(m.acconto)}</div></div><div class="box"><div class="lab">Debito</div><div class="num">${fmtEur(m.finanziato)}</div></div><div class="box"><div class="lab">Rata annua</div><div class="num">${fmtEur(y1.rataAnno)}</div></div><div class="box"><div class="lab">Cassa disponibile anno 1</div><div class="num">${fmtEur(cassaDisp)}</div></div><div class="box"><div class="lab">DSCR minimo</div><div class="num ${m.dscrMin != null && m.dscrMin >= 1.2 ? 'pos' : 'neg'}">${m.dscrMin == null ? '—' : fmtDec(m.dscrMin, 2)}</div></div></div>` +
+      (m.fin ? `<div class="bars2"><div class="bar-row"><span>Rata annua</span><div class="track"><div class="fill" style="width:${y1.rataAnno / maxBar * 100}%;background:var(--muted)"></div></div><span class="n">${fmtEur(y1.rataAnno)}</span></div><div class="bar-row"><span>Cassa disponibile</span><div class="track"><div class="fill" style="width:${cassaDisp / maxBar * 100}%;background:var(--s-save)"></div></div><span class="n">${fmtEur(cassaDisp)}</span></div></div>` : '') +
+      `<p style="color:var(--muted);font-size:12.5px;margin-top:12px">Cassa disponibile = ricavi − costi di gestione − tasse. DSCR = cassa disponibile / rata: sotto 1 l’impianto non copre la rata. Interessi totali sull’intera durata: ${fmtEur(m.interessi)}. Le tasse sono calcolate sull’utile dopo ammortamento e interessi, senza riporto delle perdite: una semplificazione prudente da rifinire con il commercialista.</p>`;
+  }
+  function renderTableTerra(m) {
+    const s = state, fin = m.fin;
+    document.getElementById('tableSub').textContent = 'Tutti i flussi in euro, IVA esclusa. La riga evidenziata è l’anno in cui il capitale investito è rientrato.';
+    const payIdx = fin ? m.paybackFin : m.paybackCassa;
+    const payYear = payIdx == null ? -1 : Math.ceil(payIdx) || 1;
+    let h = '<table><thead><tr><th>Anno</th><th>Produzione (MWh)</th><th>Prezzo (€/MWh)</th><th>Ricavi</th><th>Costi gestione</th><th>Tasse</th>' + (fin ? '<th>Rata</th><th>DSCR</th>' : '') + '<th>Flusso netto</th><th>Cumulato</th></tr></thead><tbody>';
+    const esborso = fin ? m.esborsoFin : m.invest;
+    h += `<tr><td>Oggi</td><td colspan="${fin ? 7 : 5}" style="text-align:left;color:var(--ink-2)">${fin ? 'Capitale proprio ' + fmtEur(m.acconto) + ' + costi di strutturazione ' + fmtEur(m.speseBanca) : 'Investimento pagato con capitale proprio'}</td><td class="neg">−${fmtEur(esborso)}</td><td class="cum neg">−${fmtEur(esborso)}</td></tr>`;
+    const tot = { prod: 0, ricavi: 0, opex: 0, tasse: 0, rata: 0, flusso: -esborso };
+    m.rows.forEach(r => {
+      const fl = fin ? r.flussoFin : r.flussoCassa, cum = fin ? r.cumFin : r.cumCassa, tx = fin ? r.tasseFin : r.tasseCassa;
+      tot.prod += r.prod; tot.ricavi += r.ricavi; tot.opex += r.opex; tot.tasse += tx; tot.rata += r.rataAnno; tot.flusso += fl;
+      h += `<tr${r.t === payYear ? ' class="pay"' : ''}><td>${r.t}</td><td>${fmtInt(r.prod / 1000)}</td><td>${fmtDec(r.prezzo, 1)}</td><td>${fmtEur(r.ricavi)}</td><td class="neg">−${fmtEur(r.opex)}</td><td class="neg">−${fmtEur(tx)}</td>${fin ? '<td class="neg">' + (r.rataAnno ? '−' + fmtEur(r.rataAnno) : '—') + '</td><td>' + (r.dscr == null ? '—' : fmtDec(r.dscr, 2)) + '</td>' : ''}<td class="${fl < 0 ? 'neg' : ''}">${fmtEur(fl)}</td><td class="cum${cum < 0 ? ' neg' : ''}">${fmtEur(cum)}</td></tr>`;
+    });
+    h += `</tbody><tfoot><tr><td>Totale ${m.H} anni</td><td>${fmtInt(tot.prod / 1000)}</td><td></td><td>${fmtEur(tot.ricavi)}</td><td>−${fmtEur(tot.opex)}</td><td>−${fmtEur(tot.tasse)}</td>${fin ? '<td>−' + fmtEur(tot.rata) + '</td><td></td>' : ''}<td>${fmtEur(tot.flusso)}</td><td>${fmtEur(m.guadagno)}</td></tr></tfoot></table>`;
+    document.getElementById('tableWrap').innerHTML = h;
+  }
+  function renderFaqTerra(m) {
+    const s = state, y1 = m.rows[0];
+    const items = [
+      ['Quanto terreno serve e quale?', `Circa 1,5–2 ettari per MW con struttura fissa (qui: ${fmtDec(s.ettari, 1)} ha per ${fmtDec(s.kwp / 1000, 2)} MW). Dal 2024 i moduli a terra sono vietati nelle aree classificate agricole dai piani urbanistici (DL 63/2024, confermato dalla Corte Costituzionale con la sentenza 127/2026): vanno bene aree industriali e artigianali, cave e discariche esaurite, aree idonee individuate dalla Regione. Sui terreni agricoli resta possibile l’agrivoltaico, con pannelli sollevati e almeno il 70% della superficie coltivata.`],
+      ['FER-X o vendita a mercato?', `Il FER-X dà ${fmtInt(ferxTariffa(s))} €/MWh fissi per 20 anni fino a 1 MW senza asta: meno guadagno potenziale, ma nessun rischio di prezzo, ed è quello che le banche finanziano volentieri. A mercato il solare cattura oggi circa ${fmtInt(s.prezzoMercato)} €/MWh, ma il prezzo nelle ore di sole scende man mano che crescono gli impianti (al Sud e nelle isole già oggi ci sono ore a zero). Un PPA sta in mezzo: prezzo fisso negoziato con un acquirente per 5–15 anni.`],
+      ['Cosa guadagna il proprietario del terreno?', `Se il terreno è in affitto, il canone tipico è di 2.000–4.000 € per ettaro l’anno per 25–30 anni (qui ${fmtEur(s.affittoHa)}/ha, cioè ${fmtEur(s.ettari * s.affittoHa)} l’anno), spesso indicizzato all’inflazione, con diritto di superficie registrato. Se investe lui, tiene tutto il rendimento ma anche tutto il rischio.`],
+      ['Quanto tempo ci vuole?', 'Sviluppo e autorizzazioni 8–18 mesi (PAS più rapida in area idonea, autorizzazione unica più lunga), preventivo di connessione 2–4 mesi, cantiere 4–6 mesi per 1 MW. Realisticamente 1,5–2 anni dalla prima verifica al primo kWh.'],
+      ['Che cosa succede dopo 20 anni?', `Finita la tariffa FER-X l’impianto continua a produrre (i moduli sono garantiti 25–30 anni, con un calo dello ${fmtDec(s.degrado, 1)}% l’anno) e vende a mercato. A fine vita lo smaltimento dei moduli è coperto dal sistema RAEE; per gli impianti sopra i 10 kW il GSE può trattenere una garanzia finanziaria per lo smaltimento.`],
+      ['Cosa contengono i costi di gestione?', `O&M ${fmtEur(s.omKwp * s.kwp)} (manutenzione, monitoraggio, pulizia, sfalcio, pronto intervento), assicurazione ${fmtEur(s.assKwp * s.kwp)}, affitto terreno ${fmtEur(s.ettari * s.affittoHa)}, altri costi fissi ${fmtEur(s.altriCosti)} (IMU, gestione societaria e contabile, oneri GSE e di rete). In totale ${fmtEur(m.opexAnno1)} il primo anno, con inflazione del ${fmtDec(s.inflazione, 1)}%. Gli inverter di solito si sostituiscono una volta in 25 anni: da prevedere nel contratto O&M o come riserva.`]
+    ];
+    document.getElementById('faq').innerHTML = items.map((it, i) => `<details${i === 0 ? ' open' : ''}><summary>${it[0]}</summary><div class="a">${it[1]}</div></details>`).join('');
+  }
+  function renderAssumpTerra(m) {
+    const s = state;
+    const tag = { todo: '<span class="tag todo">da confermare</span>', norm: '<span class="tag norm">normativa</span>', prev: '<span class="tag bill">preventivo</span>' };
+    const col1 = [
+      ['Potenza' + (s.preventivo ? tag.prev : ''), fmtDec(s.kwp, 0) + ' kWp' + (s.tracker ? ' con tracker' : '')],
+      ['Costo impianto (IVA escl.)' + (s.preventivo ? tag.prev : tag.todo), fmtEur(s.costo) + ' (' + fmtEur(s.costo / s.kwp) + '/kWp)'],
+      ['Sviluppo, autorizzazioni, connessione' + tag.todo, fmtEur(s.extra)],
+      ['Investimento totale', fmtEur(m.invest)],
+      ['Producibilità' + tag.todo, fmtInt(s.resa) + ' kWh/kWp'],
+      ['Disponibilità', fmtDec(s.disponibilita, 1) + '%'],
+      ['Calo di resa annuo', fmtDec(s.degrado, 2) + '%'],
+      ['Terreno', fmtDec(s.ettari, 1) + ' ha · ' + fmtEur(s.affittoHa) + '/ha/anno'],
+      ['O&M e assicurazione' + tag.todo, fmtEur(s.omKwp) + ' + ' + fmtEur(s.assKwp) + ' per kWp/anno'],
+      ['Altri costi fissi' + tag.todo, fmtEur(s.altriCosti) + '/anno'],
+      ['Inflazione dei costi', fmtDec(s.inflazione, 1) + '%/anno'],
+      ['Orizzonte', m.H + ' anni']
+    ];
+    const col2 = [
+      ['Vendita energia', s.modVendita === 'ferx' ? 'FER-X' : s.modVendita === 'ppa' ? 'PPA' : 'mercato'],
+      s.modVendita === 'ferx' ? ['Tariffa FER-X (20 anni)' + tag.norm, fmtInt(s.ferx) + ' €/MWh'] : null,
+      s.modVendita === 'ppa' ? ['Prezzo PPA', fmtInt(s.ppa) + ' €/MWh per ' + fmtInt(s.durataPPA) + ' anni'] : null,
+      ['Prezzo di cattura a mercato' + tag.todo, fmtInt(s.prezzoMercato) + ' €/MWh, ' + fmtDec(s.rincaroMercato, 1) + '%/anno'],
+      ['Tasse sugli utili', fmtDec(s.aliquotaSpv, 1) + '%'],
+      ['Ammortamento fiscale', fmtInt(s.anniAmmTerra) + ' anni'],
+      ['Struttura finanziaria', m.fin ? 'equity ' + fmtInt(s.acconto) + '% · debito ' + fmtEur(m.finanziato) : 'solo capitale proprio'],
+      m.fin ? ['Condizioni del debito' + tag.todo, fmtDec(s.tasso, 2) + '% · ' + fmtInt(s.durata / 12) + ' anni · strutturazione ' + fmtDec(s.istruttoriaPct, 1) + '%'] : null,
+      ['Tasso di attualizzazione (VAN, LCOE)', fmtDec(s.attualizzazione, 1) + '%'],
+      ['LCOE', fmtDec(m.lcoe, 1) + ' €/MWh'],
+      ['IVA', 'recuperabile (società)']
+    ].filter(Boolean);
+    const dl = rows => '<dl>' + rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('') + '</dl>';
+    document.getElementById('assump').innerHTML = `<div><h3>Impianto e costi</h3>${dl(col1)}</div><div><h3>Ricavi, fisco e finanza</h3>${dl(col2)}</div>`;
+    const src = [
+      s.preventivo ? `Preventivo ${esc(s.installatore || '')} ${esc(s.preventivo)}.` : 'Costo impianto: 700–1.200 €/kWp per 1 MW a terra nel 2026 — <a href="https://www.solareindustriale.it/progetti/impianto-fotovoltaico-1-mw" target="_blank" rel="noopener">riferimento</a>; da confermare con il preventivo EPC.',
+      'FER-X transitorio, tariffa 77 €/MWh fino a 1 MW (ARERA 339/2025), +10 al Nord, 20 anni: <a href="https://mcenergy.it/fer-x-transitorio-fissata-a-77-e-mwh-la-tariffa-per-impianti-fotovoltaici-fino-a-1-mw/" target="_blank" rel="noopener">MC Energy</a>, <a href="https://www.myenergy.it/blog/incentivi-e-agevolazioni/decreto-fer-x-definitivo-2026-cosa-cambia-per-il-fotovoltaico/" target="_blank" rel="noopener">myenergy</a>.',
+      'Prezzo di cattura del solare (108 €/MWh a giugno 2026 contro PUN 132) e ore a prezzo zero al Sud: <a href="https://www.italiasolare.eu/comunicati-stampa/mercato-elettrico-a-giugno-il-pun-supera-i-130-e-mwh-ma-al-sud-e-nelle-isole-il-prezzo-crolla-nelle-ore-di-sole/" target="_blank" rel="noopener">Italia Solare</a>. Minimo garantito 47,5 €/MWh: <a href="https://www.pv-magazine.it/2026/01/30/larera-fissa-a-475-e-mwh-il-prezzo-minimo-garantito-per-il-fotovoltaico-fino-a-1-mw-nel-2026/" target="_blank" rel="noopener">pv magazine</a>.',
+      'Divieto di moduli a terra in area agricola (DL 63/2024, Corte Cost. 127/2026) e agrivoltaico: <a href="https://www.edilportale.com/news/2026/07/normativa/fotovoltaico-a-terra-divieto-legittimo-in-area-agricola_111382_15.html" target="_blank" rel="noopener">Edilportale</a>.',
+      'Tasse: IRES 24% + IRAP 3,9%; ammortamento impianti fotovoltaici con coefficiente 9%. Project financing: ipotesi di mercato, da confermare con la banca.'
+    ];
+    document.getElementById('sources').innerHTML = '<b>Fonti</b><ul>' + src.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  }
+
+  function renderContact(m) {
+    const s = state;
+    const el = document.getElementById('contact');
+    if (!s.consulente && !s.telefono && !s.email) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = `<b>${esc(s.consulente || 'Il tuo consulente')}</b>${s.telefono ? '<span>☎ ' + esc(s.telefono) + '</span>' : ''}${s.email ? '<span>✉ ' + esc(s.email) + '</span>' : ''}<span>Per domande, il sopralluogo o l’offerta definitiva.</span>`;
+  }
+
+  function renderAgent(m) {
+    const s = state, el = document.getElementById('agentBox');
+    if (!AGENT) { el.hidden = true; return; }
+    el.hidden = false;
+    const imponibile = investimentoNetto(s);
+    const chiedi = isTerra(s) ? ['producibilità certificata (P50/P90) con layout e stringhe', 'preventivo di connessione STMG e costi della cabina di consegna', 'stato urbanistico del terreno e vincoli', 'contratto O&M con garanzia di disponibilità', 'garanzie moduli, inverter e strutture', 'tempi di cantiere e cronoprogramma autorizzativo'] : ['producibilità attesa in kWh/anno con le esposizioni delle falde', 'contratto di manutenzione: costo annuo e cosa include', 'cosa è escluso: sollevamento, verifica statica, allaccio, pratiche', 'garanzie di moduli, inverter e posa', 'tempi di consegna e validità dell’offerta'];
+    if (isAz(s)) chiedi.push('moduli iscritti al registro ENEA categoria B o C (serve per l’iperammortamento)', 'proposta di noleggio operativo per confronto');
+    if (isCond(s) || s.auc) chiedi.push('gestione della pratica AUC/CER: compresa o a parte, e a che costo');
+    el.innerHTML = `<h2>Area agente (non finisce nel PDF né nel link copiato)</h2><p>Provvigione stimata al ${fmtDec(s.provv, 1)}% sull’imponibile di ${fmtEur(imponibile)}: <span class="big">${fmtEur(imponibile * s.provv / 100)}</span></p><p style="margin-top:8px"><b>Da chiedere all’installatore prima dell’offerta definitiva:</b></p><ul>${chiedi.map(x => `<li>${x}</li>`).join('')}</ul>`;
+  }
+
+  /* =====================================================================
+     COLLEGAMENTI
+     ===================================================================== */
+  document.getElementById('btnReset').addEventListener('click', () => {
+    if (!window.confirm('Nuovo cliente: azzero tutti i dati inseriti?')) return;
+    const keep = { consulente: state.consulente, telefono: state.telefono, email: state.email, installatore: state.installatore, provv: state.provv };
+    state = Object.assign({}, DEFAULTS, keep); onChange();
+  });
+  document.getElementById('btnShare').addEventListener('click', () => {
+    const btn = document.getElementById('btnShare'), url = shareUrl();
+    const done = () => { btn.textContent = 'Link copiato'; setTimeout(() => { btn.textContent = 'Copia link'; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, () => window.prompt('Copia questo link:', url));
+    else window.prompt('Copia questo link:', url);
+  });
+  document.getElementById('btnPdf').addEventListener('click', () => {
+    document.querySelectorAll('.faq details').forEach(d => { d.open = true; });
+    window.print();
+  });
+  let resizeTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => renderCum(compute(state)), 150); });
+
+  // Scenari
+  const scen = document.createElement('div'); scen.className = 'scenarios'; scen.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px';
+  scen.innerHTML = '<span style="font-size:12px;color:var(--muted);align-self:center">Scenario:</span>' + Object.keys(SCENARI).map(k => `<button class="chip" type="button" data-scen="${k}">${k.charAt(0).toUpperCase() + k.slice(1)}</button>`).join('');
+  groupsEl.parentNode.insertBefore(scen, groupsEl);
+  scen.querySelectorAll('[data-scen]').forEach(b => b.addEventListener('click', () => { Object.assign(state, SCENARI[b.dataset.scen]); onChange(); }));
+
+  buildSidebar();
+  if (window.matchMedia && window.matchMedia('(max-width: 960px)').matches) groupsEl.querySelectorAll('details.group').forEach((d, i) => { d.open = i === 0; });
+  render();
+  syncSidebar(false);
+})();
+</script>
