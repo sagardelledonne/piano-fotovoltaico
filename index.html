@@ -73,6 +73,8 @@
   .brand .s { font-size: 11.5px; color: var(--muted); }
   .import { margin: 0 0 14px; }
   .import .btn { width: 100%; justify-content: center; }
+  .import-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .import-hint { font-size: 11.5px; color: var(--muted); line-height: 1.4; margin-top: 6px; }
   .import-out { margin-top: 8px; font-size: 12.5px; line-height: 1.45; background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; color: var(--ink-2); }
   .import-out.err { background: var(--warn-soft); color: var(--warn); }
   .import-out b { color: var(--ink); }
@@ -328,7 +330,11 @@
     <div class="side-head"><h2>Variabili</h2><span style="display:flex;gap:6px"><button class="chip ghost" id="btnShare" type="button">Copia link</button><button class="chip ghost" id="btnReset" type="button">Nuovo</button></span></div>
     <p class="side-sub">Compila la scheda con i dati della bolletta e del preventivo: tutta la pagina si ricalcola. Le modifiche restano su questo dispositivo e finiscono nel link da mandare al cliente.</p>
     <div class="import">
-      <button class="btn secondary" type="button" id="btnPdfIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>Carica preventivo SIPRO (PDF)</button>
+      <div class="import-btns">
+        <button class="btn secondary" type="button" id="btnPdfIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>Preventivo</button>
+        <button class="btn secondary" type="button" id="btnBollIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>Bolletta</button>
+      </div>
+      <p class="import-hint">Carica il PDF e i campi si compilano da soli. Puoi anche trascinare il file sulla pagina: riconosce da solo se &egrave; un preventivo o una bolletta. Il file resta sul tuo dispositivo.</p>
       <input type="file" id="pdfIn" accept="application/pdf,.pdf" hidden>
       <div class="import-out" id="pdfOut" hidden></div>
     </div>
@@ -1851,7 +1857,8 @@
   // Testo del PDF riga per riga (raggruppa i frammenti per altezza sulla pagina, poi li ordina da sinistra a destra)
   async function pdfLines(buf) {
     const pdfjs = await loadPdfjs();
-    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    // Copia difensiva: pdf.js si prende il buffer e lo stacca, rendendolo inutilizzabile al chiamante
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(buf).slice() }).promise;
     const lines = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
@@ -1883,35 +1890,232 @@
   function parseSipro(lines) {
     const all = lines.join('\n');
     const out = { trovati: [], mancanti: [], dati: {} };
-    const get = (key, re, fn) => { const m = all.match(re); if (m) { out.dati[key] = fn(m); out.trovati.push(key); } else out.mancanti.push(key); };
-    get('preventivo', /PREVENTIVO\s*n[°ºo]?\.?\s*([A-Z]{2,5}-\d{4,}[a-z]?)/i, m => m[1]);
-    get('data', /Cornegliano[^\n]*?(\d{1,2}\/\d{1,2}\/\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/, m => m[1] || m[2]);
-    get('kwp', /POTENZA IMPIANTO:?\s*([\d.,]+)\s*kWp/i, m => numIt(m[1]));
-    get('costo', /COSTO IMPIANTO FOTOVOLTAICO\s*€?\s*([\d.,]+)/i, m => numIt(m[1]));
-    get('iva', /IVA al\s*(\d{1,2})\s*%/i, m => parseInt(m[1], 10));
+    const get = (key, re, fn) => { const m = all.match(re); if (m) { const v = fn(m); if (v != null && !(typeof v === 'number' && !isFinite(v))) { out.dati[key] = v; out.trovati.push(key); return true; } } out.mancanti.push(key); return false; };
+    // Numero pratica: "PREVENTIVO n. FTV-2600473a" (modello A) oppure "N. Pratica FTV-2600421b" (modello B)
+    get('preventivo', /(?:PREVENTIVO\s*n[°ºo]?\.?|N[°ºo]?\.?\s*Pratica)\s*[:\-]?\s*([A-Z]{2,5}\s?-\s?\d{4,}\s?[a-z]?)/i, m => m[1].replace(/\s/g, ''));
+    get('data', /(?:Cornegliano|Milano|Roma|Napoli|Torino|Bologna|Firenze|[A-Z][a-z]+)\s+L?\.?,?\s*(\d{1,2}\/\d{1,2}\/\d{4})/, m => m[1]);
+    if (!out.dati.data) { const m = all.match(/(\d{1,2}\/\d{1,2}\/\d{4})/); if (m) { out.dati.data = m[1]; out.trovati.push('data'); out.mancanti = out.mancanti.filter(k => k !== 'data'); } }
+    // --- Potenza e costo: prima il modello A, poi il modello B ---
+    if (!get('kwp', /POTENZA\s+IMPIANTO:?\s*([\d.,]+)\s*kWp/i, m => numIt(m[1]))) {
+      // Modello B: la tabella perde le etichette, restano i valori in fila tra "(Ritiro Dedicato)" e "I moduli fotovoltaici"
+      const a = lines.findIndex(l => /Ritiro\s+Dedicato/i.test(l));
+      const b = lines.findIndex((l, i) => i > a && /^I moduli fotovoltaici/i.test(l));
+      if (a >= 0 && b > a) {
+        const blocco = lines.slice(a + 1, b).map(l => l.trim()).filter(Boolean);
+        const numeri = blocco.filter(l => /^[\d.,]+%?$/.test(l));
+        const perc = numeri.find(l => l.endsWith('%'));
+        const puri = numeri.filter(l => !l.endsWith('%')).map(numIt).filter(v => isFinite(v));
+        const pot = puri.find(v => v > 0.5 && v < 2000);
+        const prod = puri.find(v => v >= 500 && v !== pot);
+        if (pot != null) { out.dati.kwp = pot; out.trovati.push('kwp'); out.mancanti = out.mancanti.filter(k => k !== 'kwp'); }
+        if (prod != null) { out.dati.produzione = prod; out.trovati.push('produzione'); }
+        if (perc) { const d = numIt(perc.replace('%', '')); if (isFinite(d) && d < 3) { out.dati.degrado = d; out.trovati.push('degrado'); } }
+        const acc = blocco.find(l => /^NP$/i.test(l)) ? 0 : null;
+        if (acc === 0) out.dati.accumulo = 0;
+      }
+    }
+    if (!get('costo', /COSTO\s+IMPIANTO\s+FOTOVOLTAICO\s*[€]?\s*([\d.,]+)/i, m => numIt(m[1]))) {
+      const m = all.match(/Costo\s+impianto[^\n]{0,80}?pari\s+a\s*[€]?\s*([\d.,]+)/i) || all.match(/Pagamenti[^\n]{0,60}?([\d]{1,3}(?:\.[\d]{3})+,\d{2})\s*[€]?\s*\(?IVA\s+escl/i);
+      if (m) { out.dati.costo = numIt(m[1]); out.trovati.push('costo'); out.mancanti = out.mancanti.filter(k => k !== 'costo'); }
+    }
+    get('iva', /IVA\s+al\s*(\d{1,2})\s*%/i, m => parseInt(m[1], 10));
     get('inverter', /n\.?\s*(\d+)\s*inverter/i, m => parseInt(m[1], 10));
-    // Blocco destinatario: "SPETT. LE" seguito da nome, indirizzo, città, provincia, fino a "N° PRATICA"
+    // --- Destinatario: blocco dopo "Spett.le" ---
     const iSp = lines.findIndex(l => /SPETT\.?\s*LE/i.test(l));
     const blk = [];
-    if (iSp >= 0) for (let i = iSp + 1; i < lines.length && blk.length < 6; i++) { const l = lines[i]; if (!l) continue; if (/N[°ºo]?\.?\s*PRATICA/i.test(l)) break; blk.push(l.replace(/^SPETT\.?\s*LE\s*/i, '')); }
+    if (iSp >= 0) for (let i = iSp + 1; i < lines.length && blk.length < 7; i++) {
+      const l = (lines[i] || '').trim();
+      if (!l) continue;
+      if (/N[°ºo]?\.?\s*(PRATICA|Pratica)|Descrizione\s+sintetica|OGGETTO:/i.test(l)) break;
+      blk.push(l.replace(/^SPETT\.?\s*LE\s*/i, ''));
+    }
     if (blk.length) { out.dati.nome = blk[0]; out.trovati.push('nome'); }
-    else { const m = all.match(/CLIENTE:\s*([^\n]+)/i); if (m) { out.dati.nome = m[1].trim(); out.trovati.push('nome'); } else out.mancanti.push('nome'); }
+    else if (!get('nome', /CLIENTE:\s*([^\n]+)/i, m => m[1].trim())) { /* gia' segnato mancante */ }
     if (blk.length >= 3) {
-      const last = blk[blk.length - 1], prev = blk[blk.length - 2];
-      out.dati.localita = /^[A-Z]{2}$/.test(last) ? titleCase(prev) + ' (' + last + ')' : titleCase(prev + ' ' + last);
-      out.trovati.push('localita');
+      const iCap = blk.findIndex(l => /^\d{5}$/.test(l));
+      let citta = null, prov = null;
+      if (iCap > 0) {                                   // modello B: ... citta', CAP, provincia estesa
+        citta = blk[iCap - 1];
+        const dopo = blk[iCap + 1];
+        if (dopo && /^[A-Z]{2}$/.test(dopo)) prov = dopo;
+      } else {                                          // modello A: ... citta', sigla provincia
+        const ultima = blk[blk.length - 1];
+        if (/^[A-Z]{2}$/.test(ultima)) { prov = ultima; citta = blk[blk.length - 2]; }
+        else citta = ultima;
+      }
+      if (citta) { out.dati.localita = titleCase(citta) + (prov ? ' (' + prov.toUpperCase() + ')' : ''); out.trovati.push('localita'); }
+      else out.mancanti.push('localita');
     } else out.mancanti.push('localita');
-    // Voci escluse dal preventivo, con prezzo
+    // --- Voci escluse dal prezzo ---
     let extra = 0; const esclusi = [];
-    const mm = all.match(/meter e una connext pari a\s*€?\s*([\d.,]+)/i); if (mm) { extra += numIt(mm[1]); esclusi.push('meter e connext ' + fmtEur(numIt(mm[1]))); }
+    const mm = all.match(/meter e una connext pari a\s*[€]?\s*([\d.,]+)/i);
+    if (mm) { extra += numIt(mm[1]); esclusi.push('meter e connext ' + fmtEur(numIt(mm[1]))); }
     out.dati.extra = extra; out.dati.esclusi = esclusi;
     return out;
   }
+
+  /* ---- Bolletta elettrica: legge i dati che servono al piano ---- */
+  const FORNITORI = ['Enel Energia', 'Servizio Elettrico Nazionale', 'A2A', 'Edison', 'Iren', 'Sorgenia', 'Plenitude', 'Hera', 'Acea', 'Duferco', 'Illumia', 'Engie', 'E.ON', 'Audax', 'Octopus', 'Dolomiti', 'Alperia', 'Wekiwi', 'Pulsee', 'Optima', 'Green Network', 'Estra', 'AGSM', 'Bluenergy', 'Egea', 'Repower', 'Tate'];
+  // Numeri all'italiana: 320.939 (migliaia col punto), 94.429,66 (decimali con la virgola)
+  const NUM = '(\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:,\\d+)?)';
+  function parseBolletta(lines) {
+    const all = lines.join('\n');
+    const out = { trovati: [], mancanti: [], dati: {}, note: [] };
+    // Cerca la prima occorrenza "pulita": scarta i punti del testo dove compaiono parole vietate
+    // (le bollette contengono tabelle di confronto tra offerte, con consumi e spese che non sono quelli del cliente)
+    const cerca = (key, res, fn, vietate) => {
+      for (const re of res) {
+        const rg = new RegExp(re.source, re.flags.replace('g', '') + 'g');
+        let m;
+        while ((m = rg.exec(all)) !== null) {
+          if (m[0].length === 0) { rg.lastIndex++; continue; }
+          const intorno = all.slice(Math.max(0, m.index - 160), m.index + m[0].length + 80).toLowerCase();
+          if (vietate && vietate.some(v => intorno.indexOf(v) >= 0)) continue;
+          const v = fn(m);
+          if (v != null && v !== '' && !(typeof v === 'number' && !isFinite(v))) { out.dati[key] = v; out.trovati.push(key); return; }
+        }
+      }
+      out.mancanti.push(key);
+    };
+    const VIETATE = ['stima di spesa', 'spesa annua stimata', 'stimata dell', 'confronto', 'offerta tipo', 'prezzo di riferimento', 'servizio di maggior tutela', 'tutele graduali'];
+    // --- Fasce: prima le prendo, perche' in molte bollette stanno dentro l'etichetta del consumo annuo ---
+    const FASCE_RE = [
+      new RegExp('consumo\\s+annuo[^\\n]{0,40}?F1\\s*[:\\-]?\\s*' + NUM + '\\s*kWh[^\\n]{0,10}?F2\\s*[:\\-]?\\s*' + NUM + '\\s*kWh[^\\n]{0,10}?F3\\s*[:\\-]?\\s*' + NUM, 'i'),
+      new RegExp('totale\\s+kWh\\s*[:\\-]?\\s*F1\\s*[:\\-]?\\s*' + NUM + '[^\\n]{0,14}?F2\\s*[:\\-]?\\s*' + NUM + '[^\\n]{0,14}?F3\\s*[:\\-]?\\s*' + NUM, 'i'),
+      new RegExp('F1\\s*[:\\-]?\\s*' + NUM + '\\s*kWh[^\\n]{0,14}?F2\\s*[:\\-]?\\s*' + NUM + '\\s*kWh[^\\n]{0,14}?F3\\s*[:\\-]?\\s*' + NUM + '\\s*kWh', 'i'),
+      new RegExp('F1\\s*[:\\-]?\\s*' + NUM + '[^\\n]{0,14}?F2\\s*[:\\-]?\\s*' + NUM + '[^\\n]{0,14}?F3\\s*[:\\-]?\\s*' + NUM, 'i'),
+    ];
+    for (const re of FASCE_RE) {
+      const m = all.match(re);
+      if (!m) continue;
+      const a = numIt(m[1]), b = numIt(m[2]), c = numIt(m[3]);
+      if (a + b + c > 0 && a >= 0 && b >= 0 && c >= 0) { out.dati.f1 = a; out.dati.f2 = b; out.dati.f3 = c; out.dati.fasceTot = a + b + c; out.trovati.push('fasce'); break; }
+    }
+    if (!out.dati.fasceTot) out.mancanti.push('fasce');
+    // --- Consumo annuo ---
+    cerca('consumo', [
+      new RegExp('consumo\\s+annuo(?:\\s+(?:aggiornato|complessivo|stimato|di\\s+riferimento))?\\s*(?:\\(kWh\\))?\\s*[:\\-]?\\s*' + NUM + '\\s*(?:kWh)?', 'i'),
+      new RegExp('consumo\\s+(?:totale\\s+)?annuo[^\\n]{0,70}?' + NUM + '\\s*kWh', 'i'),
+      new RegExp('consumi\\s+annui[^\\n]{0,50}?' + NUM, 'i'),
+    ], m => numIt(m[1]), VIETATE);
+    // Se il consumo letto coincide con una delle fasce, l'etichetta era "Consumo annuo F1: .. F2: .. F3: .."
+    if (out.dati.consumo && out.dati.fasceTot) {
+      const eUnaFascia = [out.dati.f1, out.dati.f2, out.dati.f3].some(v => Math.abs(v - out.dati.consumo) < 1);
+      const scarto = Math.abs(out.dati.fasceTot - out.dati.consumo) / out.dati.consumo;
+      if (eUnaFascia) out.dati.consumo = out.dati.fasceTot;
+      else if (scarto > 0.05) { out.note.push('Consumo annuo (' + fmtInt(out.dati.consumo) + ' kWh) e somma delle fasce (' + fmtInt(out.dati.fasceTot) + ' kWh) non coincidono: uso la somma delle fasce.'); out.dati.consumo = out.dati.fasceTot; }
+    } else if (!out.dati.consumo && out.dati.fasceTot) {
+      out.dati.consumo = out.dati.fasceTot; out.trovati.push('consumo'); out.mancanti = out.mancanti.filter(k => k !== 'consumo');
+    }
+    // --- Spesa annua (ARERA: imponibile, IVA esclusa) ---
+    cerca('spesa', [
+      new RegExp('spesa\\s+annua\\s*[:\\-]?\\s*' + NUM + '\\s*(?:euro|\\u20ac)', 'i'),
+      new RegExp('spesa\\s+annua[^\\n]{0,90}?' + NUM + '\\s*(?:euro|\\u20ac)', 'i'),
+      new RegExp('spesa\\s+annua(?:\\s+sostenuta)?[^\\n]{0,130}?' + NUM, 'i'),
+    ], m => numIt(m[1]), VIETATE);
+    if (out.dati.spesa) out.dati.spesaFonte = 'bolletta';
+    // --- Se la spesa annua non c'e', la stimo dal prezzo medio di questa bolletta ---
+    if (!out.dati.spesa && out.dati.consumo) {
+      let tot = null, cons = null;
+      const mt = all.match(new RegExp('totale\\s+bolletta\\s*[\\u20ac]?\\s*' + NUM, 'i')) || all.match(new RegExp('totale\\s+fattura\\s*[\\u20ac]?\\s*' + NUM, 'i')) || all.match(new RegExp('totale\\s+da\\s+pagare\\s*[\\u20ac]?\\s*' + NUM, 'i'));
+      if (mt) tot = numIt(mt[1]);
+      const mc = all.match(new RegExp('consumo\\s+(?:totale\\s+)?fatturato[^\\n]{0,90}?' + NUM + '\\s*kWh', 'i')) || all.match(new RegExp('consumo\\s+totale\\s+del\\s+periodo[^\\n]{0,90}?' + NUM, 'i')) || all.match(new RegExp('^\\s*' + NUM + '\\s*kWh\\s', 'im'));
+      if (mc) cons = numIt(mc[1]);
+      if (tot > 0 && cons > 0 && tot / cons < 2) {
+        const iva = out.dati.iva || 10;
+        const stima = (tot / cons) * out.dati.consumo / (1 + iva / 100);
+        out.dati.spesa = Math.round(stima); out.dati.spesaFonte = 'stimata';
+        out.trovati.push('spesa'); out.mancanti = out.mancanti.filter(k => k !== 'spesa');
+        out.note.push('La bolletta non riporta la spesa annua: l’ho stimata dal prezzo medio di questa fattura (' + fmtDec(tot / cons, 3) + ' €/kWh IVA inclusa) moltiplicato per il consumo annuo. Controllala.');
+      }
+    }
+    // --- Quote fisse: quota fissa + quota potenza dello scontrino, mensili, annualizzate ---
+    // Nello scontrino ARERA la riga porta quantita', prezzo unitario e importo: l'importo e' l'ultimo numero.
+    let fissaMese = 0, letteFisse = 0;
+    const mqf = all.match(new RegExp('^\\s*(?:1\\s+)?mese\\s+' + NUM + '\\s*(?:\\u20ac|euro)?\\s*/\\s*mese\\s+' + NUM, 'im'))
+      || all.match(new RegExp('quota\\s+fissa[^\\n]{0,70}?' + NUM + '\\s*(?:\\u20ac|euro)?\\s*/\\s*(?:mese|mesi|PdP)[^\\n]{0,20}?' + NUM, 'im'));
+    if (mqf) { const v = numIt(mqf[2]); if (isFinite(v) && v > 0 && v < 5000) { fissaMese += v; letteFisse++; } }
+    const mqp = all.match(new RegExp('^\\s*' + NUM + '\\s*kW\\s+' + NUM + '\\s*(?:\\u20ac|euro)?\\s*/\\s*kW\\s+' + NUM, 'im'));
+    if (mqp) { const v = numIt(mqp[3]); if (isFinite(v) && v > 0 && v < 20000) { fissaMese += v; letteFisse++; } }
+    else {
+      const mqp2 = all.match(new RegExp(NUM + '\\s*(?:\\u20ac|euro)?\\s*/\\s*kW\\s*/\\s*mese\\s+' + NUM, 'i'));
+      if (mqp2) { const v = numIt(mqp2[2]); if (isFinite(v) && v > 0 && v < 20000) { fissaMese += v; letteFisse++; } }
+    }
+    // Una quota fissa credibile sta fra il 2% e il 40% della spesa annua: senza spesa non posso verificarla, quindi non la uso
+    if (fissaMese > 0 && letteFisse > 0 && out.dati.spesa) {
+      const annuo = Math.round(fissaMese * 12), q = annuo / out.dati.spesa;
+      if (q >= 0.02 && q <= 0.4) { out.dati.fissa = annuo; out.dati.fissaFonte = 'bolletta'; out.trovati.push('fissa'); }
+    }
+    // --- Dati tecnici e anagrafici ---
+    cerca('potenza', [
+      new RegExp('potenza\\s+impegnata\\s*[:\\-]?\\s*' + NUM + '\\s*kW', 'i'),
+      new RegExp('potenza\\s+disponibile\\s*[:\\-]?\\s*' + NUM + '\\s*kW', 'i'),
+      new RegExp('potenza\\s+contrattualmente\\s+impegnata[^\\n]{0,50}?' + NUM, 'i'),
+    ], m => numIt(m[1]));
+    cerca('pod', [/\b(IT\s?\d{3}\s?E\s?\d{8})\b/i], m => m[1].replace(/\s/g, '').toUpperCase());
+    cerca('tensione', [/tensione\s+nominale[^\n]{0,70}?(\d{3,5})\s*V/i, /\b(bassa|media)\s+tensione\b/i], m => m[1]);
+    cerca('iva', [/aliquota\s+iva[^\d\n]{0,25}(\d{1,2})\s*%/i, /\biva\s+(\d{1,2})\s*%/i], m => parseInt(m[1], 10));
+    cerca('nome', [
+      /(?:contratto\s+intestato\s+a|intestatario\s+contratto|intestatario|ragione\s+sociale)\s*[:\-]?\s*([^\n]{3,70})/i,
+      /(?:spett\.?\s*le)\s*[:\-]?\s*([^\n]{3,70})/i,
+      /(?:cliente|titolare)\s*[:\-]\s*([A-Z][^\n]{3,70})/,
+    ], m => {
+      let t = m[1].trim().replace(/\s{2,}.*$/, '').replace(/\s+(Bolletta|Fattura|Cliente|Nome|Codice).*$/i, '').trim();
+      // "Altri usi", "Uso domestico" e simili sono tipologie di fornitura, non intestatari
+      if (/^(altri\s+usi|uso\s+domestico|domestico|non\s+domestico|illuminazione|residente|non\s+residente|altri\s+utilizzi)\b/i.test(t)) return null;
+      return t.length >= 3 && /[A-Za-z]{3}/.test(t) ? t : null;
+    });
+    // La provincia deve stare tra parentesi, altrimenti "MILANO (MI)" viene spezzato in "Mila" + "NO"
+    cerca('localita', [
+      /(?:indirizzo\s+di\s+fornitura|fornitura\s+in|ubicazione)[^\n]{0,90}?\d{5}\s*[-,]?\s*([A-Za-zÀ-ÿ' ]+?)\s*[-,]?\s*\(([A-Z]{2})\)/i,
+      /IT\s?\d{3}\s?E\s?\d{8}[^\n]{0,90}?\d{5}\s*[-,]?\s*([A-Za-zÀ-ÿ' ]+?)\s*[-,]?\s*\(([A-Z]{2})\)/i,
+      /\d{5}\s*[-,]\s*([A-Za-zÀ-ÿ' ]{3,35}?)\s*[-,]?\s*\(([A-Z]{2})\)/,
+      /\d{5}\s+([A-Za-zÀ-ÿ' ]{3,35}?)\s+([A-Z]{2})(?:\s|$)/,
+    ], m => titleCase(m[1].trim()) + (m[2] ? ' (' + m[2].toUpperCase() + ')' : ''));
+    const forn = FORNITORI.find(f => new RegExp('\\b' + f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(all));
+    if (forn) { out.dati.fornitore = forn; out.trovati.push('fornitore'); }
+    if (!out.dati.fasceTot && out.dati.consumo) out.note.push('Bolletta senza fasce (offerta monoraria): ho lasciato le fasce del profilo scelto. Se le conosci, correggile a mano.');
+    return out;
+  }
+
+  let bollettaLetta = false;
+  function applyBolletta(r) {
+    const d = r.dati;
+    bollettaLetta = true;
+    if (d.nome && /condomin/i.test(d.nome) && !isCond(state)) { state.tipo = 'condominio'; Object.assign(state, PRESET_TIPO.condominio); state.resa = RESA_ZONA[state.zona]; }
+    else if (d.nome && /\b(s\.?r\.?l\.?s?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|societ[àa]|ditta|impresa)\b/i.test(d.nome) && !isAz(state)) { state.tipo = 'azienda'; Object.assign(state, PRESET_TIPO.azienda); state.resa = RESA_ZONA[state.zona]; }
+    if (d.nome && !state.nome) state.nome = titleCase(d.nome);
+    if (d.localita && !state.localita) state.localita = d.localita;
+    if (d.consumo) state.consumo = Math.round(d.consumo);
+    if (d.fasceTot > 0) {
+      const t = d.fasceTot;
+      let a = Math.round(d.f1 / t * 100), b = Math.round(d.f2 / t * 100);
+      let c = 100 - a - b; if (c < 0) { b += c; c = 0; }
+      state.f1 = a; state.f2 = b; state.f3 = c;
+    }
+    if (d.spesa) state.spesa = Math.round(d.spesa);
+    if (d.fissa) state.fissa = d.fissa;
+    else if (d.spesa) state.fissa = Math.round(d.spesa * 0.08);
+    if (d.iva && !isTerra(state)) state.iva = d.iva;
+    if (d.fasceTot > 0) {
+      const q1 = d.f1 / d.fasceTot;
+      if (isCond(state)) state.profilo = q1 > 0.31 ? 'condominio_pdc' : 'condominio_std';
+      else if (isCasa(state)) state.profilo = q1 > 0.31 ? 'casa_pdc' : 'casa';
+      else state.profilo = q1 > 0.6 ? 'capannone' : q1 > 0.5 ? 'ufficio' : 'continuo';
+    }
+    onChange();
+  }
+
   function applySipro(r) {
     const d = r.dati;
     let tipo = state.tipo;
     if (d.nome) { if (/condomin/i.test(d.nome)) tipo = 'condominio'; else if (/\b(s\.?r\.?l\.?s?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|societ[àa]|ditta|azienda|impresa|snc|sas)\b/i.test(d.nome)) tipo = 'azienda'; }
-    if (tipo !== state.tipo || isTerra(state)) { state.tipo = tipo; Object.assign(state, PRESET_TIPO[tipo]); state.resa = RESA_ZONA[state.zona]; }
+    if (tipo !== state.tipo || isTerra(state)) {
+      // Se la bolletta e' gia' stata caricata, tengo consumi, fasce e spesa: il preset li sovrascriverebbe
+      const tenuti = bollettaLetta ? { consumo: state.consumo, f1: state.f1, f2: state.f2, f3: state.f3, spesa: state.spesa, fissa: state.fissa, profilo: state.profilo, unita: state.unita } : null;
+      state.tipo = tipo; Object.assign(state, PRESET_TIPO[tipo]); state.resa = RESA_ZONA[state.zona];
+      if (tenuti) Object.assign(state, tenuti);
+    }
     state.installatore = 'SiPro Energy';
     if (d.preventivo) state.preventivo = 'n. ' + d.preventivo + (d.data ? ' del ' + d.data : '');
     if (d.nome) state.nome = d.nome;
@@ -1920,43 +2124,90 @@
     if (d.costo) state.costo = d.costo;
     if (d.iva) state.iva = d.iva;
     if (d.extra) state.extra = d.extra;
+    if (d.produzione && d.kwp) state.resa = Math.round(d.produzione / d.kwp);
+    if (d.degrado != null && d.degrado > 0) state.degrado = d.degrado;
+    if (d.accumulo != null && !isTerra(state)) { state.batteria = d.accumulo; if (!d.accumulo) state.costoBatteria = 0; }
     if (d.kwp && d.costo) state.om = Math.max(50, Math.round(d.costo * 0.01 / 10) * 10);
     onChange();
   }
-  async function importSipro(file) {
+  function tipoDocumento(lines) {
+    const all = lines.join('\n');
+    const boll = (/\bPOD\b/i.test(all) ? 2 : 0) + (/consumo\s+annuo/i.test(all) ? 2 : 0) + (/spesa\s+annua/i.test(all) ? 2 : 0) +
+      (/\bF1\b[^\n]{0,40}\bF2\b/i.test(all) ? 1 : 0) + (/bolletta|fattura\s+elettronica/i.test(all) ? 1 : 0) + (/potenza\s+impegnata|potenza\s+disponibile/i.test(all) ? 1 : 0);
+    const prev = (/PREVENTIVO/i.test(all) ? 2 : 0) + (/POTENZA\s+IMPIANTO/i.test(all) ? 2 : 0) + (/COSTO\s+IMPIANTO/i.test(all) ? 2 : 0) +
+      (/SiPro/i.test(all) ? 2 : 0) + (/fotovoltaic/i.test(all) ? 1 : 0) + (/moduli|inverter/i.test(all) ? 1 : 0);
+    return boll > prev ? 'bolletta' : prev > 0 ? 'preventivo' : null;
+  }
+  async function importPdf(file, atteso) {
     const box = document.getElementById('pdfOut');
-    box.hidden = false; box.className = 'import-out'; box.textContent = 'Leggo il preventivo…';
+    box.hidden = false; box.className = 'import-out'; box.textContent = 'Leggo il documento...';
     try {
       if (!file || !/pdf$/i.test(file.name) && file.type !== 'application/pdf') throw new Error('Serve un file PDF.');
-      const buf = await file.arrayBuffer();
-      const lines = await pdfLines(buf);
-      if (!lines.some(l => /SiPro|SIPRO/i.test(l))) throw new Error('Questo PDF non sembra un preventivo SIPRO: non trovo il loro nome nel documento.');
-      const r = parseSipro(lines);
-      if (r.dati.kwp == null && r.dati.costo == null) throw new Error('Non ho trovato né la potenza né il prezzo: il formato è diverso da quello atteso. Compila i campi a mano.');
-      applySipro(r);
-      const d = r.dati, li = [];
-      if (d.nome) li.push('Cliente: <b>' + esc(d.nome) + '</b>' + (d.localita ? ' · ' + esc(d.localita) : ''));
-      if (d.preventivo) li.push('Preventivo <b>' + esc(d.preventivo) + '</b>' + (d.data ? ' del ' + d.data : ''));
-      if (d.kwp) li.push('Potenza <b>' + fmtDec(d.kwp, 2) + ' kWp</b>' + (d.inverter ? ' · ' + d.inverter + ' inverter' : ''));
-      if (d.costo) li.push('Prezzo <b>' + fmtEur(d.costo) + '</b> + IVA' + (d.iva ? ' ' + d.iva + '%' : ''));
-      if (d.esclusi.length) li.push('Esclusi: ' + d.esclusi.join(', ') + ' → messi in "costi esclusi"');
-      const manc = r.mancanti.filter(k => ['kwp', 'costo', 'nome', 'localita', 'preventivo'].includes(k));
-      box.innerHTML = '<b>Preventivo letto.</b> Tipo cliente: ' + TIPO_LABEL[state.tipo].toLowerCase() + '.<ul>' + li.map(x => '<li>' + x + '</li>').join('') + '</ul>' +
-        (manc.length ? '<div class="small" style="color:var(--warn)">Non trovati nel PDF: ' + manc.join(', ') + ' — da inserire a mano.</div>' : '') +
-        '<div class="small">Ora inserisci i dati della bolletta (consumo, fasce, spesa). Producibilità e manutenzione sono stimate: il preventivo SIPRO non le indica. Il file resta sul tuo dispositivo.</div>';
+      const lines = await pdfLines(await file.arrayBuffer());
+      if (!lines.some(l => l.trim())) throw new Error('Questo PDF non contiene testo leggibile: sembra la scansione di un foglio. Serve il PDF originale scaricato dal fornitore.');
+      const tipo = tipoDocumento(lines);
+      if (!tipo) throw new Error('Non riconosco questo documento: non sembra un preventivo né una bolletta. Compila i campi a mano.');
+      if (tipo === 'bolletta') esitoBolletta(parseBolletta(lines), atteso === 'preventivo');
+      else esitoSipro(parseSipro(lines), atteso === 'bolletta');
     } catch (e) {
       box.className = 'import-out err'; box.textContent = e.message || 'Errore nella lettura del PDF.';
     }
   }
-  document.getElementById('btnPdfIn').addEventListener('click', () => document.getElementById('pdfIn').click());
-  document.getElementById('pdfIn').addEventListener('change', ev => { const f = ev.target.files && ev.target.files[0]; if (f) importSipro(f); ev.target.value = ''; });
+  function esitoBolletta(r, inatteso) {
+    const box = document.getElementById('pdfOut'), d = r.dati;
+    if (!d.consumo && !d.spesa) throw new Error('Non ho trovato né il consumo annuo né la spesa annua: questa bolletta ha un formato che non conosco. Inserisci i dati a mano.');
+    applyBolletta(r);
+    const li = [];
+    if (d.nome) li.push('Cliente: <b>' + esc(titleCase(d.nome)) + '</b>' + (d.localita ? ' · ' + esc(d.localita) : ''));
+    if (d.fornitore) li.push('Fornitore: ' + esc(d.fornitore) + (d.pod ? ' · POD ' + esc(d.pod) : ''));
+    if (d.consumo) li.push('Consumo annuo: <b>' + fmtInt(d.consumo) + ' kWh</b>');
+    if (d.fasceTot) li.push('Fasce: <b>F1 ' + fmtInt(state.f1) + '% · F2 ' + fmtInt(state.f2) + '% · F3 ' + fmtInt(state.f3) + '%</b>');
+    if (d.spesa) li.push('Spesa annua: <b>' + fmtEur(d.spesa) + '</b>' + (d.spesaFonte === 'stimata' ? ' <i>(stimata)</i>' : '') + ' → ' + fmtDec(prezzoEvitabile(state), 3) + ' €/kWh evitabili');
+    if (d.fissa) li.push('Quote fisse: ' + fmtEur(d.fissa) + ' l’anno (quota fissa + quota potenza)');
+    else if (d.spesa) li.push('Quote fisse <b>stimate</b> all’8% della spesa: <b>controllale</b> sullo scontrino della bolletta');
+    if (d.potenza) li.push('Potenza impegnata: ' + fmtDec(d.potenza, 1) + ' kW' + (d.tensione ? ' · ' + d.tensione + (/^\d+$/.test(d.tensione) ? ' V' : ' tensione') : ''));
+    li.push('Profilo di consumo: <b>' + PROFILI[state.profilo].label + '</b>');
+    const manc = r.mancanti.filter(k => ['consumo', 'fasce', 'spesa'].includes(k));
+    box.className = 'import-out';
+    box.innerHTML = (inatteso ? '<b>Questo è una bolletta, non un preventivo: l’ho letta lo stesso.</b>' : '<b>Bolletta letta.</b>') +
+      '<ul>' + li.map(x => '<li>' + x + '</li>').join('') + '</ul>' +
+      r.note.map(n => '<div class="small" style="color:var(--warn)">' + n + '</div>').join('') +
+      (manc.length ? '<div class="small" style="color:var(--warn)">Non trovati: ' + manc.join(', ') + ' — da inserire a mano.</div>' : '') +
+      '<div class="small">Ora carica il preventivo, oppure inserisci potenza e costo dell’impianto.</div>';
+  }
+  function esitoSipro(r, inatteso) {
+    const box = document.getElementById('pdfOut');
+    if (r.dati.kwp == null && r.dati.costo == null) throw new Error('Non ho trovato né la potenza né il prezzo: il formato è diverso da quello atteso. Compila i campi a mano.');
+    applySipro(r);
+    const d = r.dati, li = [];
+    if (d.nome) li.push('Cliente: <b>' + esc(d.nome) + '</b>' + (d.localita ? ' · ' + esc(d.localita) : ''));
+    if (d.preventivo) li.push('Preventivo <b>' + esc(d.preventivo) + '</b>' + (d.data ? ' del ' + d.data : ''));
+    if (d.kwp) li.push('Potenza <b>' + fmtDec(d.kwp, 2) + ' kWp</b>' + (d.inverter ? ' · ' + d.inverter + ' inverter' : ''));
+    if (d.costo) li.push('Prezzo <b>' + fmtEur(d.costo) + '</b> + IVA' + (d.iva ? ' ' + d.iva + '%' : ''));
+    if (d.produzione) li.push('Produzione attesa: <b>' + fmtInt(d.produzione) + ' kWh/anno</b> = ' + fmtInt(state.resa) + ' kWh/kWp' + (d.degrado != null ? ' \u00b7 calo di resa ' + fmtDec(d.degrado, 2) + '%/anno' : ''));
+    if (d.accumulo === 0) li.push('Accumulo: <b>non previsto</b>');
+    if (d.esclusi.length) li.push('Esclusi: ' + d.esclusi.join(', ') + ' → messi in "costi esclusi"');
+    const manc = r.mancanti.filter(k => ['kwp', 'costo', 'nome', 'localita', 'preventivo'].includes(k));
+    box.className = 'import-out';
+    box.innerHTML = (inatteso ? '<b>Questo è un preventivo, non una bolletta: l’ho letto lo stesso.</b> ' : '<b>Preventivo letto.</b> ') +
+      'Tipo cliente: ' + TIPO_LABEL[state.tipo].toLowerCase() + '.<ul>' + li.map(x => '<li>' + x + '</li>').join('') + '</ul>' +
+      (manc.length ? '<div class="small" style="color:var(--warn)">Non trovati nel PDF: ' + manc.join(', ') + ' — da inserire a mano.</div>' : '') +
+      '<div class="small">Ora carica la bolletta, oppure inserisci a mano consumo, fasce e spesa. Producibilità e manutenzione sono stimate: il preventivo non le indica.</div>';
+  }
+  let attesoPdf = null;
+  document.getElementById('btnPdfIn').addEventListener('click', () => { attesoPdf = 'preventivo'; document.getElementById('pdfIn').click(); });
+  document.getElementById('btnBollIn').addEventListener('click', () => { attesoPdf = 'bolletta'; document.getElementById('pdfIn').click(); });
+  document.getElementById('pdfIn').addEventListener('change', ev => { const f = ev.target.files && ev.target.files[0]; if (f) importPdf(f, attesoPdf); ev.target.value = ''; attesoPdf = null; });
   let dragDepth = 0;
   document.addEventListener('dragenter', ev => { if (ev.dataTransfer && [...ev.dataTransfer.types].includes('Files')) { dragDepth++; document.body.classList.add('dragging'); } });
   document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
   document.addEventListener('dragover', ev => { ev.preventDefault(); });
-  document.addEventListener('drop', ev => { ev.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging'); const f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if (f) importSipro(f); });
+  document.addEventListener('drop', ev => { ev.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging'); const f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if (f) importPdf(f, null); });
   // Per prove: window.jamImportPdf(arrayBuffer) restituisce i dati letti
   window.jamImportPdf = buf => pdfLines(buf).then(parseSipro);
+  window.jamImportBolletta = buf => pdfLines(buf).then(parseBolletta);
+  window.jamTipoDoc = buf => pdfLines(buf).then(tipoDocumento);
+  window.jamLines = buf => pdfLines(buf);
 
   /* =====================================================================
      COLLEGAMENTI
