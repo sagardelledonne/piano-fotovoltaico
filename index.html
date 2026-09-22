@@ -464,6 +464,29 @@
   // Impianti a terra con struttura fissa ben orientata (tracker: circa +18%)
   const RESA_TERRA = { nord: 1250, centro: 1450, sud: 1600 };
   const FERX_BASE = 77, FERX_BONUS = { nord: 10, centro: 0, sud: 0 };
+  // Noleggio operativo: montante e condizioni dai listini usati dalla rete (6 anni in entrambi i casi).
+  // Nota: la rata Italia Fintech si calcola sul PROPRIO montante (128%), non su quello GRENKE.
+  const NOLEGGIO = {
+    grenke:  { label: 'GRENKE', rate: 24, perAnno: 4, unita: 'trimestrale', anni: 6, montante: 1.3464, quotaRate: 0.92,  riscattoPct: 0.0375, assicPct: 0.0129, istrPct: 0,      istrFissa: 0   },
+    italfin: { label: 'Italia Fintech', rate: 72, perAnno: 12, unita: 'mensile', anni: 6, montante: 1.28, quotaRate: 0.961, riscattoPct: null,  assicPct: 0,      istrPct: 0.0083, istrFissa: 350 }
+  };
+  // Listino manutenzione SIPRO 2025 per scaglione di potenza (soglia = "inferiore a")
+  const MANUT = [
+    { fino: 7,    monitoraggio: 57.5,  controlli: 115, termografia: 172.5, lavaggio: 287.5, gse: 0,     cestello: 172.5 },
+    { fino: 21,   monitoraggio: 115,   controlli: 230, termografia: 345,   lavaggio: 345,   gse: 115,   cestello: 172.5 },
+    { fino: 51,   monitoraggio: 143.75, controlli: 460, termografia: 345,  lavaggio: 460,   gse: 172.5, cestello: 172.5 },
+    { fino: 101,  monitoraggio: 172.5, controlli: 920, termografia: 402.5, lavaggio: 690,   gse: 230,   cestello: 172.5 },
+    { fino: 201,  monitoraggio: 230,   controlli: 920, termografia: 460,   lavaggio: 1150,  gse: 345,   cestello: 172.5 }
+  ];
+  const KM_EXTRA = 1.38;                       // euro per km oltre i primi 50
+  // Pratica GSE e massimale PNRR per scaglione di potenza
+  const GSE_SCAGLIONI = [
+    { fino: 20,   pratica: 50,   massimale: 1500 },
+    { fino: 200,  pratica: 450,  massimale: 1200 },
+    { fino: 600,  pratica: 1300, massimale: 1100 },
+    { fino: 1000, pratica: 2300, massimale: 1050 }
+  ];
+  const MQ_PER_KWP = 4.65;                     // circa 2,15 mq per modulo da 460 W
   // Alba e tramonto (ora locale, media del mese) per il calcolo dell'autoconsumo
   const SOLE = { nord: [[8.0,17.1],[7.4,17.8],[6.9,18.9],[6.7,20.2],[6.0,20.8],[5.6,21.2],[5.8,21.0],[6.4,20.3],[7.0,19.4],[7.6,18.5],[7.3,16.9],[7.9,16.7]],
                  centro: [[7.6,17.0],[7.2,17.7],[6.7,18.6],[6.5,19.9],[6.0,20.4],[5.7,20.8],[5.9,20.6],[6.4,20.0],[6.9,19.2],[7.4,18.4],[7.1,16.9],[7.6,16.7]],
@@ -496,6 +519,8 @@
     detrazione: 36, detrMix: 1, detrAnni: 10, quotaPrima: 60, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0,
     // pagamento
     pagamento: 'finanziamento', acconto: 0, tasso: 5.9, durata: 60, istruttoria: 250, imposta: 0.25, incasso: 2.75, attualizzazione: 5,
+    noleggio: 'grenke',
+    mq: 0, kmSede: 50, manutAuto: 1, lavaggi: 1, termografia: 0, cestello: 0, pnrrAuto: 0,
     // condominio
     unita: 30,
     // impianto a terra (vendita di energia)
@@ -551,8 +576,14 @@
       { key: 'ivaRec', type: 'check', label: 'IVA recuperabile (azienda con partita IVA)', showIf: isAz, hint: 'Se l’azienda scarica l’IVA, i conti sono tutti al netto di IVA.' },
       { key: 'resa', label: 'Producibilità', unit: 'kWh/kWp', min: 800, max: 2000, step: 5, slider: true, hint: 'Quanti kWh produce ogni kWp in un anno. Se l’installatore la indica nel preventivo, usa quella.' },
       { key: 'disponibilita', label: 'Disponibilità impianto', unit: '%', min: 90, max: 100, step: 0.5, showIf: isTerra, hint: 'Ore in cui l’impianto funziona davvero: fermi, guasti, limitazioni di rete.' },
+      { key: 'mq', label: 'Superficie disponibile', unit: 'mq', min: 0, max: 200000, step: 10, derived: s => s.mq > 0 ? 'ci stanno ' + fmtDec(kwpDaMq(s.mq), 1) + ' kWp' : fmtInt(s.kwp * MQ_PER_KWP) + ' mq servono', hint: 'Metri quadri di tetto o terreno utilizzabili. Servono circa 4,65 mq per kWp (modulo da 460 W con i suoi spazi). Lascia 0 se non la conosci: il campo serve solo a controllare che l’impianto ci stia.' },
       { key: 'degrado', label: 'Calo di resa annuo', unit: '%', min: 0, max: 1.5, step: 0.05 },
-      { key: 'om', label: 'Manutenzione e assicurazione', unit: '€/anno', min: 0, max: 20000, step: 10, hint: 'Indicativamente l’1% del costo impianto. Da confermare con l’installatore.', warn: true, showIf: notTerra },
+      { key: 'manutAuto', type: 'check', label: 'Manutenzione dal listino SIPRO', showIf: notTerra, hint: 'Calcola il canone dal listino per scaglione di potenza, invece di stimarlo. Sopra i 200 kWp il listino non copre: serve una quotazione dedicata.' },
+      { key: 'lavaggi', label: 'Lavaggi moduli all’anno', unit: 'n.', min: 0, max: 4, step: 1, showIf: s => notTerra(s) && !!s.manutAuto },
+      { key: 'termografia', type: 'check', label: 'Ispezione termografica', showIf: s => notTerra(s) && !!s.manutAuto },
+      { key: 'cestello', type: 'check', label: 'Cestello (piano alto o tetto scomodo)', showIf: s => notTerra(s) && !!s.manutAuto },
+      { key: 'kmSede', label: 'Distanza dalla sede SIPRO', unit: 'km', min: 0, max: 1000, step: 10, showIf: s => notTerra(s) && !!s.manutAuto, hint: 'Oltre i primi 50 km si aggiungono 1,38 €/km per ogni uscita.' },
+      { key: 'om', label: 'Manutenzione e assicurazione', unit: '€/anno', min: 0, max: 20000, step: 10, hint: 'Indicativamente l’1% del costo impianto. Da confermare con l’installatore.', warn: true, showIf: s => notTerra(s) && !s.manutAuto },
       { key: 'orizzonte', label: 'Anni considerati', unit: 'anni', min: 10, max: 30, step: 1 }
     ]},
     { title: 'Consumi e bolletta', showIf: notTerra, fields: [
@@ -587,7 +618,8 @@
       { key: 'aliquota', label: 'Aliquota fiscale', unit: '%', min: 0, max: 50, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'IRES 24% per le società di capitali; per ditte e società di persone l’aliquota IRPEF del titolare.' },
       { key: 'anniAmm', label: 'Anni di ammortamento', unit: 'anni', min: 5, max: 20, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'Il risparmio fiscale si spalma su questi anni.' },
       { key: 'sabatini', type: 'check', label: 'Nuova Sabatini green (PMI)', showIf: isAz, hint: 'Il Ministero rimborsa gli interessi di un finanziamento a 5 anni al 3,575%: circa il 10% dell’investimento. Serve un finanziamento bancario o leasing.' },
-      { key: 'fondoPerduto', label: 'Contributo a fondo perduto', unit: '%', min: 0, max: 60, step: 1, hint: 'Bandi regionali e comunali (Lombardia "Linea Impresa Efficiente" fino al 45% per le PMI), ZES Unica al Sud (fino al 60%), PNRR per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti (40%). Zero se non c’è un bando aperto. Viene tolto dall’investimento nel primo anno.' },
+      { key: 'pnrrAuto', type: 'check', label: 'Contributo PNRR per le comunità energetiche', showIf: s => !!s.auc, hint: '40% della spesa, entro un massimale per kW che dipende dalla taglia (1.500 €/kW fino a 20 kW, 1.200 fino a 200, 1.100 fino a 600, 1.050 fino a 1.000). Vale solo nei comuni fino a 50.000 abitanti e per impianti in configurazione CER o autoconsumo collettivo. Verifica lo sportello aperto prima di prometterlo.' },
+      { key: 'fondoPerduto', label: 'Altro contributo a fondo perduto', unit: '%', min: 0, max: 60, step: 1, hint: 'Bandi regionali e comunali (Lombardia "Linea Impresa Efficiente" fino al 45% per le PMI), ZES Unica al Sud (fino al 60%), PNRR per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti (40%). Zero se non c’è un bando aperto. Viene tolto dall’investimento nel primo anno.' },
       { key: 'contoTermico', label: 'Conto Termico 3.0', unit: '%', min: 0, max: 65, step: 1, hint: 'Contributo GSE a fondo perduto: sul fotovoltaico vale solo per pubbliche amministrazioni ed edifici del terziario, e solo abbinato alla sostituzione della caldaia con una pompa di calore. Su case e condomini incentiva la pompa di calore, non i pannelli. Zero se non ricorre.' }
     ]},
     { title: 'Vendita dell’energia', showIf: isTerra, fields: [
@@ -609,7 +641,8 @@
       { key: 'anniAmmTerra', label: 'Anni di ammortamento', unit: 'anni', min: 5, max: 25, step: 1, hint: 'Ammortamento fiscale dell’impianto (coefficiente 9% ≈ 11 anni).' }
     ]},
     { title: 'Pagamento', fields: [
-      { key: 'pagamento', type: 'seg', label: 'Come paga il cliente', options: [['finanziamento', 'Finanziamento'], ['cassa', 'Tutto in cassa']], showIf: notTerra },
+      { key: 'pagamento', type: 'seg', label: 'Come paga il cliente', options: [['finanziamento', 'Finanziamento'], ['cassa', 'Cassa'], ['noleggio', 'Noleggio']], showIf: notTerra },
+      { key: 'noleggio', type: 'seg', label: 'Società di noleggio', options: [['grenke', 'GRENKE'], ['italfin', 'Italia Fintech']], showIf: s => notTerra(s) && s.pagamento === 'noleggio', hint: 'GRENKE: 24 rate trimestrali, assicurazione a parte, riscatto 3,75%. Italia Fintech: 72 rate mensili, assicurazione inclusa, riscatto pari a una rata, spese di pratica iniziali.' },
       { key: 'pagamento', alias: 'pagamentoTerra', type: 'seg', label: 'Struttura finanziaria', options: [['finanziamento', 'Debito + capitale'], ['cassa', 'Solo capitale proprio']], showIf: isTerra },
       { key: 'acconto', label: 'Acconto in cassa', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => fin(s) && notTerra(s), derived: s => fmtEur(investimentoTotale(s) * s.acconto / 100) + ' subito' },
       { key: 'acconto', alias: 'accontoTerra', label: 'Capitale proprio (equity)', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => fin(s) && isTerra(s), derived: s => fmtEur(investimentoTotale(s) * s.acconto / 100) + ' di equity', hint: 'Il resto lo copre la banca. Nei project financing tipicamente 20–35%.' },
@@ -691,6 +724,37 @@
   function investimentoNetto(s) { return s.costo + s.extra + (s.batteria > 0 ? s.costoBatteria : 0); }
   function investimentoTotale(s) { return investimentoNetto(s) * ivaFattore(s); }
   function detrazioneCond(s) { return 50 * s.quotaPrima / 100 + 36 * (1 - s.quotaPrima / 100); }
+  function scaglioneManut(kwp) { return MANUT.find(r => kwp < r.fino) || null; }
+  function manutenzioneListino(s) {
+    const r = scaglioneManut(s.kwp);
+    if (!r) return null;                                        // sopra 200 kWp il listino dice "da valutare"
+    let tot = r.monitoraggio + r.controlli + r.gse;             // voci sempre incluse nel contratto standard
+    if (s.lavaggi > 0) tot += r.lavaggio * s.lavaggi;
+    if (s.termografia) tot += r.termografia;
+    if (s.cestello) tot += r.cestello;
+    tot += Math.max(0, s.kmSede - 50) * KM_EXTRA * Math.max(1, s.lavaggi);
+    return Math.round(tot / 100) * 100;                         // il listino arrotonda alle centinaia
+  }
+  function scaglioneGse(kwp) { return GSE_SCAGLIONI.find(r => kwp <= r.fino) || null; }
+  function praticaGse(s) { const r = scaglioneGse(s.kwp); return r ? r.pratica : 0; }
+  function contributoPnrr(s) {
+    // 40% della spesa, entro un massimale in euro per kW che dipende dalla taglia. Solo in configurazione CER/AUC.
+    if (!s.pnrrAuto || !s.auc || s.kwp > 1000) return 0;
+    const r = scaglioneGse(s.kwp);
+    if (!r) return 0;
+    const euroPerKw = Math.min(investimentoNetto(s) / s.kwp, r.massimale);
+    return euroPerKw * s.kwp * 0.4;
+  }
+  function kwpDaMq(mq) { return mq > 0 ? mq / MQ_PER_KWP : 0; }
+  function datiNoleggio(s) {
+    const N = NOLEGGIO[s.noleggio] || NOLEGGIO.grenke;
+    const montante = investimentoNetto(s) * N.montante;
+    const rata = montante * N.quotaRate / N.rate;
+    const canoneAnno = rata * N.perAnno + montante * N.assicPct;
+    const riscatto = N.riscattoPct != null ? montante * N.riscattoPct : rata;
+    const iniziale = montante * N.istrPct + N.istrFissa;
+    return { N, montante, rata, canoneAnno, riscatto, iniziale, anni: N.anni };
+  }
   function detrazioneRate(s) { if (isAz(s) || isTerra(s)) return 0; if (isCasa(s) && s.reddito) return 0; if (isCond(s) && s.detrMix) return detrazioneCond(s); return s.detrazione; }
   function consumoFuturo(s) { return s.consumo * (1 + s.aumento / 100); }
   function prodShape(s) { const sh = PV_SHAPE[s.zona]; const tot = sh.reduce((a, b) => a + b, 0); return sh.map(v => v / tot); }
@@ -868,7 +932,10 @@
     const detrRate = detrazioneRate(s);
     // contributi una tantum
     const reddito = (isCasa(s) && s.reddito) ? Math.min(11000, 2000 + 1500 * s.kwp) : 0;
-    const fondo = investNetto * s.fondoPerduto / 100;
+    const omListino = s.manutAuto ? manutenzioneListino(s) : null;
+    const omAnno = omListino != null ? omListino : s.om;
+    const pnrr = contributoPnrr(s);
+    const fondo = investNetto * s.fondoPerduto / 100 + pnrr;
     const sabatini = (isAz(s) && s.sabatini) ? investNetto * 0.10 : 0;
     const contoTermico = investNetto * s.contoTermico / 100;
     const iperTot = (isAz(s) && s.iper) ? investNetto * s.iperMagg / 100 * s.aliquota / 100 : 0;
@@ -881,9 +948,14 @@
     const rataBase = rataMensile(finanziato, s.tasso, s.durata);
     const rata = rataBase > 0 ? rataBase + s.incasso : 0;
     const esborsoFin = acconto + speseBanca;
+    // Noleggio operativo: il cliente non compra l'impianto, paga un canone. Nessun esborso iniziale se non le spese di pratica.
+    const nol = s.pagamento === 'noleggio';
+    const NL = datiNoleggio(s);
+    const esborsoNol = NL.iniziale;
+    const esborso2 = nol ? esborsoNol : esborsoFin;
     const rows = [];
-    let cumCassa = -investDaPagare, cumFin = -esborsoFin;
-    const cfCassa = [-investDaPagare], cfFin = [-esborsoFin];
+    let cumCassa = -investDaPagare, cumFin = -esborso2;
+    const cfCassa = [-investDaPagare], cfFin = [-esborso2];
     const annoBatt = 12;
     for (let t = 1; t <= H; t++) {
       const prod = prodAnno1 * Math.pow(1 - s.degrado / 100, t - 1);
@@ -897,12 +969,23 @@
       const iper = t <= s.anniAmm ? iperAnno : 0;
       const contributi = t === 1 ? fondo + sabatini + contoTermico : 0;
       const incentivi = detr + iper + contributi;
-      let om = s.om * Math.pow(1.02, t - 1);
+      let om = omAnno * Math.pow(1.02, t - 1);
       if (s.batteria > 0 && t === annoBatt && H >= annoBatt + 3) om += s.costoBatteria * ivaF * 0.7; // sostituzione batteria, prezzi in calo
       const mesiRata = Math.max(0, Math.min(12, s.durata - (t - 1) * 12));
-      const rataAnno = rata * mesiRata;
-      const flussoCassa = risparmio + vendita + auc + incentivi - om;
-      const flussoFin = flussoCassa - rataAnno;
+      let rataAnno = rata * mesiRata;
+      let flussoCassa = risparmio + vendita + auc + incentivi - om;
+      let flussoFin;
+      if (nol) {
+        // Col noleggio non si e' proprietari: niente detrazione e niente iperammortamento, ma per un'azienda il canone e' deducibile
+        const canone = t <= NL.anni ? NL.canoneAnno : 0;
+        const riscatto = t === NL.anni ? NL.riscatto : 0;
+        const deduz = isAz(s) ? (canone + riscatto) * s.aliquota / 100 : 0;
+        rataAnno = canone + riscatto;
+        flussoCassa = risparmio + vendita + auc - om;                 // senza incentivi da proprietario
+        flussoFin = flussoCassa + deduz - rataAnno;
+      } else {
+        flussoFin = flussoCassa - rataAnno;
+      }
       cumCassa += flussoCassa; cumFin += flussoFin;
       cfCassa.push(flussoCassa); cfFin.push(flussoFin);
       rows.push({ t, prod, auto, surplus, risparmio, vendita, auc, detr, iper, contributi, incentivi, om, rataAnno, flussoCassa, flussoFin, cumCassa, cumFin });
@@ -914,8 +997,8 @@
       return null;
     };
     const cumC = [-investDaPagare].concat(rows.map(r => r.cumCassa));
-    const cumF = [-esborsoFin].concat(rows.map(r => r.cumFin));
-    const isFin = fin(s);
+    const cumF = [-esborso2].concat(rows.map(r => r.cumFin));
+    const isFin = fin(s) || nol;
     const y1 = rows[0];
     const prodTot = rows.reduce((a, r) => a + r.prod, 0);
     const bollettaOggi = s.spesa * ivaF;
@@ -931,13 +1014,20 @@
     if (s.contoTermico > 0 && !isAz(s)) avvisi.push('Conto Termico al ' + fmtInt(s.contoTermico) + '%: sul fotovoltaico di case e condomini non spetta (solo PA ed edifici del terziario con pompa di calore). Lascialo solo se è riferito a una pompa di calore abbinata.');
     if (isCasa(s) && s.reddito && s.detrazione) avvisi.push('Con il reddito energetico non si somma la detrazione fiscale: il piano la esclude.');
     if (isAz(s) && s.sabatini && !isFin) avvisi.push('La Nuova Sabatini richiede un finanziamento bancario o un leasing: con pagamento in cassa non spetta.');
+    if (s.mq > 0 && s.kwp * MQ_PER_KWP > s.mq * 1.02) avvisi.push('Servono circa ' + fmtInt(s.kwp * MQ_PER_KWP) + ' mq per ' + fmtDec(s.kwp, 1) + ' kWp, ma ne hai dichiarati ' + fmtInt(s.mq) + ': con questa superficie ci stanno circa ' + fmtDec(kwpDaMq(s.mq), 1) + ' kWp.');
+    if (s.manutAuto && manutenzioneListino(s) == null) avvisi.push('Sopra i 200 kWp il listino di manutenzione non arriva: serve una quotazione dedicata a SIPRO. Per ora uso la stima a mano di ' + fmtEur(s.om) + '/anno.');
+    if (nol && detrazioneRate(s) > 0) avvisi.push('Col noleggio operativo il cliente non è proprietario dell’impianto: la detrazione fiscale non spetta, e il piano non la conteggia.');
+    if (nol && isAz(s) && s.iper) avvisi.push('Col noleggio operativo non spetta l’iperammortamento (non c’è un bene da ammortizzare): il canone è però interamente deducibile, e il piano lo conteggia.');
+    if (s.pnrrAuto && !s.auc) avvisi.push('Il contributo PNRR vale solo per impianti in configurazione CER o autoconsumo collettivo: attiva la comunità energetica o togli la spunta.');
+    if (s.pnrrAuto && s.auc) avvisi.push('Contributo PNRR conteggiato (' + fmtEur(contributoPnrr(s)) + '): verifica che il comune abbia meno di 50.000 abitanti e che lo sportello sia aperto.');
     if (isCasa(s) && s.auc) avvisi.push('Per una casa l’energia condivisa vale solo aderendo a una comunità energetica esistente nella stessa cabina primaria.');
     if (invest * detrRate / 100 > 96000 * (isCond(s) ? s.unita : 1) * detrRate / 100 && detrRate > 0) avvisi.push('La spesa supera il tetto di 96.000 € per unità su cui si calcola la detrazione.');
     return {
-      H, invest, investNetto, investDaPagare, acconto, finanziato, speseBanca, esborsoFin, rata, fin: isFin, rows, pEvit, ivaF,
+      H, invest, investNetto, investDaPagare, acconto, finanziato, speseBanca, esborsoFin: esborso2, rata: nol ? NL.canoneAnno / 12 : rata, fin: isFin, rows, pEvit, ivaF,
       consumo, quota, quotaCalc, quotaBase, surplusMesi: ac.surplusMesi, detrRate, reddito, fondo, sabatini, contoTermico, iperTot, iperAnno,
+      nol, noleggio: NL, omAnno, omListino, pnrr, praticaGse: praticaGse(s), mqNecessari: s.kwp * MQ_PER_KWP,
       nettoY1Fin: y1.flussoFin,
-      interessi: rata * s.durata - finanziato,
+      interessi: nol ? (NL.canoneAnno * NL.anni + NL.riscatto + NL.iniziale - investNetto) : rata * s.durata - finanziato,
       paybackCassa: payback(cumC), paybackFin: payback(cumF), cumC, cumF,
       guadagno: isFin ? cumF[cumF.length - 1] : cumC[cumC.length - 1],
       irr: irr(cfCassa),
@@ -1096,8 +1186,10 @@
       const benMese = (m.beneficioY1 + m.rows[0].incentivi - m.rows[0].om) / 12;
       tiles = [
         { hero: true, label: netto >= 0 ? 'Il primo anno, pagata la rata, ' + chi + ' ' + (isCond(s) ? 'sono' : 'è') + ' in attivo di' : 'Il primo anno, pagata la rata, ' + chi + ' ' + (isCond(s) ? 'integrano' : 'integra'), value: fmtEur(Math.abs(netto)), sub: 'rata ' + fmtEur(m.rata) + ' al mese contro ' + fmtEur(benMese) + ' al mese di benefici' + (incMese > 0 ? ', di cui ' + fmtEur(incMese) + ' di incentivi' : '') + (m.acconto > 0 ? ' · acconto ' + fmtEur(m.acconto) : ' · senza anticipare nulla') },
-        { label: 'Investimento totale', value: fmtEur(m.invest), sub: (m.ivaF === 1 ? 'IVA esclusa (recuperabile)' : 'IVA ' + s.iva + '% inclusa') + ' · finanziati ' + fmtEur(m.finanziato) + (m.reddito ? ' · reddito energetico ' + fmtEur(m.reddito) : '') },
-        { label: 'Rata mensile', value: fmtEur(m.rata), sub: fmtInt(s.durata) + ' mesi al ' + fmtDec(s.tasso, 2) + '% · interessi totali ' + fmtEur(m.interessi) },
+        m.nol ? { label: 'Quanto esce dalla cassa oggi', value: fmtEur(m.esborsoFin), sub: m.esborsoFin > 0 ? 'solo spese di pratica: l’impianto non si compra' : 'niente: l’impianto non si compra, si paga un canone' }
+               : { label: 'Investimento totale', value: fmtEur(m.invest), sub: (m.ivaF === 1 ? 'IVA esclusa (recuperabile)' : 'IVA ' + s.iva + '% inclusa') + ' · finanziati ' + fmtEur(m.finanziato) + (m.reddito ? ' · reddito energetico ' + fmtEur(m.reddito) : '') },
+        m.nol ? { label: 'Canone ' + m.noleggio.N.unita, value: fmtEur(m.noleggio.rata), sub: fmtInt(m.noleggio.N.rate) + ' rate in ' + fmtInt(m.noleggio.anni) + ' anni · ' + m.noleggio.N.label + ' · riscatto finale ' + fmtEur(m.noleggio.riscatto) }
+               : { label: 'Rata mensile', value: fmtEur(m.rata), sub: fmtInt(s.durata) + ' mesi al ' + fmtDec(s.tasso, 2) + '% · interessi totali ' + fmtEur(m.interessi) },
         { label: 'Guadagno netto in ' + m.H + ' anni', value: fmtEur(m.guadagno), sub: 'dopo aver pagato acconto, rate, spese bancarie e manutenzione' },
         isAz(s) ? { label: 'Valore attuale netto (VAN)', value: fmtEur(m.van), sub: 'al ' + fmtDec(s.attualizzazione, 1) + '% · rendimento annuo ' + (m.irr == null ? '—' : fmtPct(m.irr * 100, 1)) }
                 : { label: 'Rendimento annuo', value: m.irr == null ? '—' : fmtPct(m.irr * 100, 1), sub: 'tasso interno di rendimento dell’impianto, contro il ' + fmtDec(s.tasso, 2) + '% chiesto dalla banca' }
@@ -1137,7 +1229,14 @@
       const rataAnno = m.rata * 12, netto = m.nettoY1Fin;
       const cassaAnno = m.beneficioY1 - y1.om - rataAnno + (isCond(s) ? 0 : y1.incentivi);
       const dopoRata = m.rows[Math.min(m.rows.length - 1, Math.ceil(s.durata / 12))];
-      p3 = (m.acconto > 0 ? `Con un acconto di <b>${fmtEur(m.acconto)}</b> (${fmtInt(s.acconto)}%) e finanziando i restanti <b>${fmtEur(m.finanziato)}</b>` : `Finanziando l’intero importo di <b>${fmtEur(m.finanziato)}</b>`) +
+      if (m.nol) {
+        const N = m.noleggio;
+        const dopo = m.rows[Math.min(m.rows.length - 1, N.anni)];
+        p3 = `Con il <b>noleggio operativo ${N.N.label}</b> l’impianto non si compra: si pagano <b>${fmtInt(N.N.rate)} rate ${N.N.unita === 'trimestrale' ? 'trimestrali' : 'mensili'} da ${fmtEur(N.rata)}</b> per ${fmtInt(N.anni)} anni, cioè <b>${fmtEur(N.canoneAnno)} l’anno</b>${N.N.assicPct ? ' (assicurazione compresa)' : ' (assicurazione già nelle rate)'}, e alla fine si riscatta a <b>${fmtEur(N.riscatto)}</b>. ` +
+          (m.esborsoFin > 0 ? `All’inizio escono solo <b>${fmtEur(m.esborsoFin)}</b> di spese di pratica. ` : `All’inizio non esce nulla dalla cassa. `) +
+          `Il primo anno l’impianto porta <b>${fmtEur(m.beneficioY1)}</b> di benefici contro <b>${fmtEur(N.canoneAnno)}</b> di canone: ${m.nettoY1Fin >= 0 ? `<b>${fmtEur(m.nettoY1Fin)} in attivo</b>` : `<b>${fmtEur(-m.nettoY1Fin)} l’anno da integrare</b>`}${isAz(s) ? `, tenendo già conto che il canone è interamente deducibile (${fmtEur(N.canoneAnno * s.aliquota / 100)} di tasse in meno all’anno)` : ''}. ` +
+          `Finito il noleggio l’impianto è vostro e il beneficio resta tutto: circa <b>${fmtEur(dopo.flussoCassa)} l’anno</b>. In ${m.H} anni il guadagno netto è di <b>${fmtEur(m.guadagno)}</b>. In tutto il noleggio costa <b>${fmtEur(N.canoneAnno * N.anni + N.riscatto + N.iniziale)}</b> contro <b>${fmtEur(m.investNetto)}</b> di acquisto diretto: la differenza è il prezzo di non mettere soldi oggi.`;
+      } else p3 = (m.acconto > 0 ? `Con un acconto di <b>${fmtEur(m.acconto)}</b> (${fmtInt(s.acconto)}%) e finanziando i restanti <b>${fmtEur(m.finanziato)}</b>` : `Finanziando l’intero importo di <b>${fmtEur(m.finanziato)}</b>`) +
         ` in <b>${fmtInt(s.durata)} mesi</b> al ${fmtDec(s.tasso, 2)}%, la rata è di <b>${fmtEur(m.rata)} al mese</b>, cioè ${fmtEur(rataAnno)} l’anno, contro ${fmtEur(m.beneficioY1 + y1.incentivi)} di benefici. ` +
         (netto >= 0 ? `${chi} è <b>in attivo di ${fmtEur(netto)} fin dal primo anno</b>${m.acconto > 0 ? '.' : ', senza anticipare un euro.'}` : `Nei primi anni ${soggetto(s)} integra <b>${fmtEur(-netto)} l’anno</b>.`);
       if (isCond(s) && y1.detr > 0) p3 += ` Attenzione però: ${fmtEur(y1.detr)} di questi sono la detrazione fiscale, che torna alle famiglie con le tasse e non in cassa condominiale; guardando la sola cassa del condominio, la differenza tra benefici e rate è di <b>${cassaAnno >= 0 ? '+' : '−'}${fmtEur(Math.abs(cassaAnno))} l’anno</b>.`;
@@ -1437,6 +1536,7 @@
   function renderFin(m) {
     const s = state, y1 = m.rows[0];
     if (isTerra(s)) { renderFinTerra(m); return; }
+    if (m.nol) { renderFinNoleggio(m); return; }
     document.getElementById('finTitle').textContent = 'Con il finanziamento';
     document.getElementById('finSub').textContent = 'La rata si confronta direttamente con quello che si risparmia ogni mese. L’acconto si regola nelle variabili: più acconto, rata più bassa.';
     const benMese = (m.beneficioY1 + y1.incentivi - y1.om) / 12;
@@ -1460,6 +1560,23 @@
       `<p style="color:var(--muted);font-size:12.5px;margin-top:12px">Il beneficio mensile comprende risparmio in bolletta, energia venduta o condivisa e incentivi dell’anno, al netto della manutenzione. Interessi e spese di incasso sull’intera durata: ${fmtEur(m.interessi)}; spese iniziali: ${fmtEur(m.speseBanca)}. La rata è calcolata a mese commerciale: la banca conteggia i giorni effettivi e la rata reale oscilla di qualche euro.</p>`;
   }
 
+  function renderFinNoleggio(m) {
+    const s = state, y1 = m.rows[0], N = m.noleggio;
+    document.getElementById('finTitle').textContent = 'Con il noleggio operativo';
+    document.getElementById('finSub').textContent = 'L’impianto resta della società di noleggio per ' + fmtInt(N.anni) + ' anni, poi si riscatta. Nessun investimento oggi.';
+    const benMese = (m.beneficioY1 - y1.om) / 12, canoneMese = N.canoneAnno / 12;
+    const deduzMese = isAz(s) ? N.canoneAnno * s.aliquota / 100 / 12 : 0;
+    const netto = benMese + deduzMese - canoneMese;
+    const maxBar = Math.max(benMese + deduzMese, canoneMese, 1);
+    const totale = N.canoneAnno * N.anni + N.riscatto + N.iniziale;
+    document.getElementById('finCard').innerHTML =
+      `<p style="color:var(--ink-2);font-size:13.5px">${N.N.label}: ${fmtInt(N.N.rate)} rate ${N.N.unita === 'trimestrale' ? 'trimestrali' : 'mensili'} da ${fmtEur(N.rata)} in ${fmtInt(N.anni)} anni${N.N.assicPct ? ', più ' + fmtEur(N.montante * N.N.assicPct) + ' l’anno di assicurazione' : ', assicurazione inclusa nelle rate'}${N.iniziale > 0 ? ', più ' + fmtEur(N.iniziale) + ' di spese di pratica all’avvio' : ', senza spese di pratica'}. Riscatto finale ${fmtEur(N.riscatto)}.</p>` +
+      `<div class="fin"><div class="box"><div class="lab">Esborso oggi</div><div class="num">${fmtEur(m.esborsoFin)}</div></div><div class="box"><div class="lab">Canone annuo</div><div class="num">${fmtEur(N.canoneAnno)}</div></div><div class="box"><div class="lab">Beneficio annuo</div><div class="num">${fmtEur(m.beneficioY1 - y1.om)}</div></div>${deduzMese ? `<div class="box"><div class="lab">Tasse in meno (canone deducibile)</div><div class="num pos">${fmtEur(deduzMese * 12)}</div></div>` : ''}<div class="box"><div class="lab">Differenza ogni mese</div><div class="num ${netto >= 0 ? 'pos' : 'neg'}">${netto >= 0 ? '+' : '−'}${fmtEur(Math.abs(netto))}</div></div></div>` +
+      `<div class="bars2"><div class="bar-row"><span>Canone</span><div class="track"><div class="fill" style="width:${canoneMese / maxBar * 100}%;background:var(--muted)"></div></div><span class="n">${fmtEur(canoneMese)}</span></div><div class="bar-row"><span>Beneficio${deduzMese ? ' + deduzione' : ''}</span><div class="track"><div class="fill" style="width:${(benMese + deduzMese) / maxBar * 100}%;background:var(--s-save)"></div></div><span class="n">${fmtEur(benMese + deduzMese)}</span></div></div>` +
+      `<div class="cassa"><b>Cosa si guadagna e cosa si perde.</b> Si guadagna di non immobilizzare ${fmtEur(m.investNetto)} e, per un’azienda, di dedurre interamente il canone. Si perde la proprietà per ${fmtInt(N.anni)} anni e ${detrazioneRate(s) > 0 || (isAz(s) && s.iper) ? '<b>tutti gli incentivi da proprietario</b> (detrazione fiscale e iperammortamento non spettano)' : 'gli incentivi da proprietario'}. In totale il noleggio costa <b>${fmtEur(totale)}</b> contro <b>${fmtEur(m.investNetto)}</b> di acquisto: <b>${fmtEur(totale - m.investNetto)}</b> in più, cioè il ${fmtDec((totale / m.investNetto - 1) * 100, 0)}%.</div>` +
+      `<p style="color:var(--muted);font-size:12.5px;margin-top:12px">Valori indicativi dai listini in uso: GRENKE montante 134,64% del prezzo, quota rate 92%, riscatto 3,75%, assicurazione 1,29% annuo; Italia Fintech montante 128%, quota rate 96,1%, riscatto pari a una rata, istruttoria 0,83% + 350 €. Da confermare con la società di noleggio: dipendono dalla taglia e dal merito creditizio del cliente.</p>`;
+  }
+
   function renderTable(m) {
     const s = state, fin = m.fin;
     if (isTerra(s)) { renderTableTerra(m); return; }
@@ -1468,7 +1585,7 @@
     const payYear = payIdx == null ? -1 : Math.ceil(payIdx) || 1;
     const showAuc = !!s.auc;
     const cols = 6 + (showAuc ? 1 : 0) + (fin ? 1 : 0) + 2;
-    let h = '<table><thead><tr><th>Anno</th><th>Produzione (kWh)</th><th>Risparmio bolletta</th>' + (showAuc ? '<th>Energia condivisa</th>' : '') + '<th>Vendita in rete</th><th>Incentivi</th><th>Manutenzione</th>' + (fin ? '<th>Rata</th>' : '') + '<th>Flusso netto</th><th>Cumulato</th></tr></thead><tbody>';
+    let h = '<table><thead><tr><th>Anno</th><th>Produzione (kWh)</th><th>Risparmio bolletta</th>' + (showAuc ? '<th>Energia condivisa</th>' : '') + '<th>Vendita in rete</th><th>Incentivi</th><th>Manutenzione</th>' + (fin ? (m.nol ? '<th>Canone</th>' : '<th>Rata</th>') : '') + '<th>Flusso netto</th><th>Cumulato</th></tr></thead><tbody>';
     const esborso = fin ? m.esborsoFin : m.investDaPagare;
     const esborsoLab = fin ? (m.acconto > 0 ? 'Acconto ' + fmtEur(m.acconto) + ' + spese bancarie ' + fmtEur(m.speseBanca) : 'Spese bancarie iniziali ' + fmtEur(m.speseBanca) + ', nessun acconto') : 'Pagamento dell’impianto' + (m.reddito ? ' al netto del reddito energetico' : '');
     h += `<tr><td>Oggi</td><td colspan="${cols - 3}" style="text-align:left;color:var(--ink-2)">${esborsoLab}</td><td class="neg">−${fmtEur(esborso)}</td><td class="cum neg">−${fmtEur(esborso)}</td></tr>`;
@@ -1559,7 +1676,8 @@
       ['Investimento totale', fmtEur(m.invest)],
       ['Producibilità' + tag.todo, fmtInt(s.resa) + ' kWh/kWp'],
       ['Calo di resa annuo', fmtDec(s.degrado, 2) + '%'],
-      ['Manutenzione e assicurazione' + tag.todo, fmtEur(s.om) + '/anno (+2%/anno)'],
+      [m.omListino != null ? 'Manutenzione (listino SIPRO, ' + fmtInt(s.lavaggi) + ' lavaggi, ' + fmtInt(s.kmSede) + ' km)' + tag.norm : 'Manutenzione e assicurazione' + tag.todo, fmtEur(m.omAnno) + '/anno (+2%/anno)'],
+      s.mq > 0 ? ['Superficie disponibile', fmtInt(s.mq) + ' mq (servono ' + fmtInt(m.mqNecessari) + ')'] : null,
       ['Orizzonte', m.H + ' anni']
     ].filter(Boolean);
     const col2 = [
@@ -1581,8 +1699,11 @@
       m.fondo > 0 ? ['Contributo a fondo perduto' + tag.todo, fmtInt(s.fondoPerduto) + '%'] : null,
       m.contoTermico > 0 ? ['Conto Termico 3.0' + tag.todo, fmtInt(s.contoTermico) + '%'] : null,
       m.reddito > 0 ? ['Reddito energetico' + tag.todo, fmtEur(m.reddito)] : null,
-      ['Pagamento', m.fin ? 'acconto ' + fmtInt(s.acconto) + '% · finanziati ' + fmtEur(m.finanziato) : 'tutto in cassa'],
-      m.fin ? ['Condizioni finanziamento' + tag.todo, 'tasso ' + fmtDec(s.tasso, 2) + '% · ' + fmtInt(s.durata) + ' mesi · istruttoria ' + fmtEur(s.istruttoria) + ' · imposta ' + fmtDec(s.imposta, 2) + '% · ' + fmtDec(s.incasso, 2) + ' €/rata'] : null,
+      m.pnrr > 0 ? ['Contributo PNRR CER (40%)' + tag.todo, fmtEur(m.pnrr)] : null,
+      m.praticaGse > 0 ? ['Pratica GSE (listino per scaglione)', fmtEur(m.praticaGse)] : null,
+      ['Pagamento', m.nol ? 'noleggio ' + m.noleggio.N.label + ', ' + fmtInt(m.noleggio.N.rate) + ' rate da ' + fmtEur(m.noleggio.rata) : m.fin ? 'acconto ' + fmtInt(s.acconto) + '% · finanziati ' + fmtEur(m.finanziato) : 'tutto in cassa'],
+      m.nol ? ['Condizioni noleggio' + tag.todo, 'montante ' + fmtDec(m.noleggio.N.montante * 100, 2) + '%, riscatto ' + fmtEur(m.noleggio.riscatto) + ', totale ' + fmtEur(m.noleggio.canoneAnno * m.noleggio.anni + m.noleggio.riscatto + m.noleggio.iniziale)] : null,
+      m.fin && !m.nol ? ['Condizioni finanziamento' + tag.todo, 'tasso ' + fmtDec(s.tasso, 2) + '% · ' + fmtInt(s.durata) + ' mesi · istruttoria ' + fmtEur(s.istruttoria) + ' · imposta ' + fmtDec(s.imposta, 2) + '% · ' + fmtDec(s.incasso, 2) + ' €/rata'] : null,
       isCond(s) ? ['Famiglie (unità abitative)', fmtInt(s.unita)] : null
     ].filter(Boolean);
     const dl = rows => '<dl>' + rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('') + '</dl>';
