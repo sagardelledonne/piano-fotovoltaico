@@ -71,6 +71,14 @@
   .brand .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-family: var(--font-display); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; letter-spacing: -.02em; }
   .brand .t { font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.1; }
   .brand .s { font-size: 11.5px; color: var(--muted); }
+  .import { margin: 0 0 14px; }
+  .import .btn { width: 100%; justify-content: center; }
+  .import-out { margin-top: 8px; font-size: 12.5px; line-height: 1.45; background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; color: var(--ink-2); }
+  .import-out.err { background: var(--warn-soft); color: var(--warn); }
+  .import-out b { color: var(--ink); }
+  .import-out ul { margin: 4px 0 0; padding-left: 16px; }
+  .import-out .small { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+  body.dragging::after { content: "Lascia qui il PDF del preventivo"; position: fixed; inset: 0; background: rgba(15,94,74,.85); color: #fff; font-family: var(--font-display); font-size: 28px; font-weight: 700; display: flex; align-items: center; justify-content: center; z-index: 50; }
 
   details.group { border-top: 1px solid var(--line); padding: 4px 0 8px; }
   details.group:last-of-type { border-bottom: 1px solid var(--line); }
@@ -311,6 +319,11 @@
     <div class="brand"><div class="logo">J@M</div><div><div class="t">Piano Fotovoltaico</div><div class="s">strumento per la rete commerciale</div></div></div>
     <div class="side-head"><h2>Variabili</h2><span style="display:flex;gap:6px"><button class="chip ghost" id="btnShare" type="button">Copia link</button><button class="chip ghost" id="btnReset" type="button">Nuovo</button></span></div>
     <p class="side-sub">Compila la scheda con i dati della bolletta e del preventivo: tutta la pagina si ricalcola. Le modifiche restano su questo dispositivo e finiscono nel link da mandare al cliente.</p>
+    <div class="import">
+      <button class="btn secondary" type="button" id="btnPdfIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>Carica preventivo SIPRO (PDF)</button>
+      <input type="file" id="pdfIn" accept="application/pdf,.pdf" hidden>
+      <div class="import-out" id="pdfOut" hidden></div>
+    </div>
     <div id="groups"></div>
   </aside>
 
@@ -1716,6 +1729,134 @@
     if (isCond(s) || s.auc) chiedi.push('gestione della pratica AUC/CER: compresa o a parte, e a che costo');
     el.innerHTML = `<h2>Area agente (non finisce nel PDF né nel link copiato)</h2><p>Provvigione stimata al ${fmtDec(s.provv, 1)}% sull’imponibile di ${fmtEur(imponibile)}: <span class="big">${fmtEur(imponibile * s.provv / 100)}</span></p><p style="margin-top:8px"><b>Da chiedere all’installatore prima dell’offerta definitiva:</b></p><ul>${chiedi.map(x => `<li>${x}</li>`).join('')}</ul>`;
   }
+
+  /* =====================================================================
+     IMPORT PREVENTIVO SIPRO (PDF)
+     Il file viene letto nel browser con pdf.js: non viene caricato da nessuna parte.
+     ===================================================================== */
+  const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  let pdfjsReady = null;
+  function loadPdfjs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfjsReady) return pdfjsReady;
+    pdfjsReady = new Promise((res, rej) => {
+      const sc = document.createElement('script'); sc.src = PDFJS_URL; sc.async = true;
+      sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; res(window.pdfjsLib); };
+      sc.onerror = () => { pdfjsReady = null; rej(new Error('Non riesco a scaricare il lettore PDF: controlla la connessione e riprova.')); };
+      document.head.appendChild(sc);
+    });
+    return pdfjsReady;
+  }
+  // Testo del PDF riga per riga (raggruppa i frammenti per altezza sulla pagina, poi li ordina da sinistra a destra)
+  async function pdfLines(buf) {
+    const pdfjs = await loadPdfjs();
+    const doc = await pdfjs.getDocument({ data: buf }).promise;
+    const lines = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const tc = await page.getTextContent();
+      const rows = new Map();
+      tc.items.forEach(it => {
+        if (!it.str || !it.str.trim()) return;
+        const y = Math.round(it.transform[5] / 3) * 3;
+        if (!rows.has(y)) rows.set(y, []);
+        rows.get(y).push({ x: it.transform[4], w: it.width || 0, t: it.str });
+      });
+      // I PDF spezzano le parole in frammenti ("FTV", "-", "260047", "3"): se due frammenti si toccano vanno incollati senza spazio
+      [...rows.entries()].sort((a, b) => b[0] - a[0]).forEach(([, its]) => {
+        its.sort((a, b) => a.x - b.x);
+        let line = '', end = null;
+        its.forEach(i => {
+          const gap = end == null ? 0 : i.x - end;
+          if (end != null) line += (gap > 1.5 || /\s$/.test(line) || /^\s/.test(i.t)) ? ' ' : '';
+          line += i.t; end = i.x + i.w;
+        });
+        lines.push(line.replace(/\s+/g, ' ').trim());
+      });
+      lines.push('');
+    }
+    return lines;
+  }
+  function numIt(t) { return parseFloat(String(t).replace(/\./g, '').replace(',', '.')); }
+  function titleCase(t) { return String(t).toLowerCase().replace(/(^|[\s\-'])([a-zà-ú])/g, (a, b, c) => b + c.toUpperCase()); }
+  function parseSipro(lines) {
+    const all = lines.join('\n');
+    const out = { trovati: [], mancanti: [], dati: {} };
+    const get = (key, re, fn) => { const m = all.match(re); if (m) { out.dati[key] = fn(m); out.trovati.push(key); } else out.mancanti.push(key); };
+    get('preventivo', /PREVENTIVO\s*n[°ºo]?\.?\s*([A-Z]{2,5}-\d{4,}[a-z]?)/i, m => m[1]);
+    get('data', /Cornegliano[^\n]*?(\d{1,2}\/\d{1,2}\/\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/, m => m[1] || m[2]);
+    get('kwp', /POTENZA IMPIANTO:?\s*([\d.,]+)\s*kWp/i, m => numIt(m[1]));
+    get('costo', /COSTO IMPIANTO FOTOVOLTAICO\s*€?\s*([\d.,]+)/i, m => numIt(m[1]));
+    get('iva', /IVA al\s*(\d{1,2})\s*%/i, m => parseInt(m[1], 10));
+    get('inverter', /n\.?\s*(\d+)\s*inverter/i, m => parseInt(m[1], 10));
+    // Blocco destinatario: "SPETT. LE" seguito da nome, indirizzo, città, provincia, fino a "N° PRATICA"
+    const iSp = lines.findIndex(l => /SPETT\.?\s*LE/i.test(l));
+    const blk = [];
+    if (iSp >= 0) for (let i = iSp + 1; i < lines.length && blk.length < 6; i++) { const l = lines[i]; if (!l) continue; if (/N[°ºo]?\.?\s*PRATICA/i.test(l)) break; blk.push(l.replace(/^SPETT\.?\s*LE\s*/i, '')); }
+    if (blk.length) { out.dati.nome = blk[0]; out.trovati.push('nome'); }
+    else { const m = all.match(/CLIENTE:\s*([^\n]+)/i); if (m) { out.dati.nome = m[1].trim(); out.trovati.push('nome'); } else out.mancanti.push('nome'); }
+    if (blk.length >= 3) {
+      const last = blk[blk.length - 1], prev = blk[blk.length - 2];
+      out.dati.localita = /^[A-Z]{2}$/.test(last) ? titleCase(prev) + ' (' + last + ')' : titleCase(prev + ' ' + last);
+      out.trovati.push('localita');
+    } else out.mancanti.push('localita');
+    // Voci escluse dal preventivo, con prezzo
+    let extra = 0; const esclusi = [];
+    const mm = all.match(/meter e una connext pari a\s*€?\s*([\d.,]+)/i); if (mm) { extra += numIt(mm[1]); esclusi.push('meter e connext ' + fmtEur(numIt(mm[1]))); }
+    out.dati.extra = extra; out.dati.esclusi = esclusi;
+    return out;
+  }
+  function applySipro(r) {
+    const d = r.dati;
+    let tipo = state.tipo;
+    if (d.nome) { if (/condomin/i.test(d.nome)) tipo = 'condominio'; else if (/\b(s\.?r\.?l\.?s?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|societ[àa]|ditta|azienda|impresa|snc|sas)\b/i.test(d.nome)) tipo = 'azienda'; }
+    if (tipo !== state.tipo || isTerra(state)) { state.tipo = tipo; Object.assign(state, PRESET_TIPO[tipo]); state.resa = RESA_ZONA[state.zona]; }
+    state.installatore = 'SiPro Energy';
+    if (d.preventivo) state.preventivo = 'n. ' + d.preventivo + (d.data ? ' del ' + d.data : '');
+    if (d.nome) state.nome = d.nome;
+    if (d.localita) state.localita = d.localita;
+    if (d.kwp) state.kwp = d.kwp;
+    if (d.costo) state.costo = d.costo;
+    if (d.iva) state.iva = d.iva;
+    if (d.extra) state.extra = d.extra;
+    if (d.kwp && d.costo) state.om = Math.max(50, Math.round(d.costo * 0.01 / 10) * 10);
+    onChange();
+  }
+  async function importSipro(file) {
+    const box = document.getElementById('pdfOut');
+    box.hidden = false; box.className = 'import-out'; box.textContent = 'Leggo il preventivo…';
+    try {
+      if (!file || !/pdf$/i.test(file.name) && file.type !== 'application/pdf') throw new Error('Serve un file PDF.');
+      const buf = await file.arrayBuffer();
+      const lines = await pdfLines(buf);
+      if (!lines.some(l => /SiPro|SIPRO/i.test(l))) throw new Error('Questo PDF non sembra un preventivo SIPRO: non trovo il loro nome nel documento.');
+      const r = parseSipro(lines);
+      if (r.dati.kwp == null && r.dati.costo == null) throw new Error('Non ho trovato né la potenza né il prezzo: il formato è diverso da quello atteso. Compila i campi a mano.');
+      applySipro(r);
+      const d = r.dati, li = [];
+      if (d.nome) li.push('Cliente: <b>' + esc(d.nome) + '</b>' + (d.localita ? ' · ' + esc(d.localita) : ''));
+      if (d.preventivo) li.push('Preventivo <b>' + esc(d.preventivo) + '</b>' + (d.data ? ' del ' + d.data : ''));
+      if (d.kwp) li.push('Potenza <b>' + fmtDec(d.kwp, 2) + ' kWp</b>' + (d.inverter ? ' · ' + d.inverter + ' inverter' : ''));
+      if (d.costo) li.push('Prezzo <b>' + fmtEur(d.costo) + '</b> + IVA' + (d.iva ? ' ' + d.iva + '%' : ''));
+      if (d.esclusi.length) li.push('Esclusi: ' + d.esclusi.join(', ') + ' → messi in "costi esclusi"');
+      const manc = r.mancanti.filter(k => ['kwp', 'costo', 'nome', 'localita', 'preventivo'].includes(k));
+      box.innerHTML = '<b>Preventivo letto.</b> Tipo cliente: ' + TIPO_LABEL[state.tipo].toLowerCase() + '.<ul>' + li.map(x => '<li>' + x + '</li>').join('') + '</ul>' +
+        (manc.length ? '<div class="small" style="color:var(--warn)">Non trovati nel PDF: ' + manc.join(', ') + ' — da inserire a mano.</div>' : '') +
+        '<div class="small">Ora inserisci i dati della bolletta (consumo, fasce, spesa). Producibilità e manutenzione sono stimate: il preventivo SIPRO non le indica. Il file resta sul tuo dispositivo.</div>';
+    } catch (e) {
+      box.className = 'import-out err'; box.textContent = e.message || 'Errore nella lettura del PDF.';
+    }
+  }
+  document.getElementById('btnPdfIn').addEventListener('click', () => document.getElementById('pdfIn').click());
+  document.getElementById('pdfIn').addEventListener('change', ev => { const f = ev.target.files && ev.target.files[0]; if (f) importSipro(f); ev.target.value = ''; });
+  let dragDepth = 0;
+  document.addEventListener('dragenter', ev => { if (ev.dataTransfer && [...ev.dataTransfer.types].includes('Files')) { dragDepth++; document.body.classList.add('dragging'); } });
+  document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+  document.addEventListener('dragover', ev => { ev.preventDefault(); });
+  document.addEventListener('drop', ev => { ev.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging'); const f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if (f) importSipro(f); });
+  // Per prove: window.jamImportPdf(arrayBuffer) restituisce i dati letti
+  window.jamImportPdf = buf => pdfLines(buf).then(parseSipro);
 
   /* =====================================================================
      COLLEGAMENTI
