@@ -514,12 +514,12 @@
     // consumi
     consumo: 120000, f1: 33, f2: 28, f3: 39, spesa: 34000, fissa: 3000, rincaro: 2, aumento: 0, profilo: 'condominio_pdc', autoMode: 'calc', autoconsumo: 85,
     // eccesso
-    vendita: 0.08, auc: 1, condivisa: 80, premio: 0.12, restituzione: 0.009,
+    vendita: 0.10, auc: 1, condivisa: 80, premio: 0.12, restituzione: 0.009,
     // incentivi
     detrazione: 36, detrMix: 1, detrAnni: 10, quotaPrima: 60, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0,
     // pagamento
     pagamento: 'finanziamento', acconto: 0, tasso: 5.9, durata: 60, istruttoria: 250, imposta: 0.25, incasso: 2.75, attualizzazione: 5,
-    noleggio: 'grenke',
+    noleggio: 'grenke', omK: 1,
     mq: 0, kmSede: 50, manutAuto: 1, lavaggi: 1, termografia: 0, cestello: 0, pnrrAuto: 0,
     // condominio
     unita: 30,
@@ -529,16 +529,31 @@
     provv: 6
   };
   const PRESET_TIPO = {
-    casa: { kwp: 4, costo: 7200, extra: 200, iva: 10, ivaRec: 0, om: 80, batteria: 0, costoBatteria: 0, consumo: 3800, f1: 25, f2: 30, f3: 45, spesa: 1100, fissa: 200, profilo: 'casa', auc: 0, condivisa: 0, detrazione: 50, detrMix: 0, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'cassa', durata: 60, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
-    condominio: { kwp: 30, costo: 42000, extra: 1500, iva: 10, ivaRec: 0, om: 420, batteria: 0, costoBatteria: 0, consumo: 120000, f1: 33, f2: 28, f3: 39, spesa: 34000, fissa: 3000, profilo: 'condominio_pdc', auc: 1, condivisa: 80, detrazione: 36, detrMix: 1, quotaPrima: 60, unita: 30, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
+    casa: { kwp: 4, costo: 7200, extra: 200, iva: 10, ivaRec: 0, om: 80, batteria: 0, costoBatteria: 0, consumo: 3800, f1: 25, f2: 30, f3: 45, spesa: 1100, fissa: 200, profilo: 'casa', auc: 0, condivisa: 0, detrazione: 50, detrMix: 0, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'cassa', durata: 60, degrado: 0.4, orizzonte: 25, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
+    condominio: { kwp: 30, costo: 42000, extra: 1500, iva: 10, ivaRec: 0, om: 420, batteria: 0, costoBatteria: 0, consumo: 120000, f1: 33, f2: 28, f3: 39, spesa: 34000, fissa: 3000, profilo: 'condominio_pdc', auc: 1, condivisa: 80, detrazione: 36, detrMix: 1, quotaPrima: 60, unita: 30, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60, degrado: 0.4, orizzonte: 25, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
     terra: { kwp: 1000, costo: 750000, extra: 80000, iva: 22, ivaRec: 1, om: 0, batteria: 0, costoBatteria: 0, resa: 1250, degrado: 0.5, orizzonte: 25, profilo: 'continuo', auc: 0, condivisa: 0, detrazione: 0, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', acconto: 40, tasso: 4.5, durata: 216, istruttoria: 0, imposta: 0, incasso: 0, modVendita: 'ferx', ferx: 87, tracker: 0 },
-    azienda: { kwp: 60, costo: 72000, extra: 2500, iva: 22, ivaRec: 1, om: 750, batteria: 0, costoBatteria: 0, consumo: 180000, f1: 58, f2: 24, f3: 18, spesa: 45000, fissa: 4200, profilo: 'capannone', auc: 0, condivisa: 0, detrazione: 0, detrMix: 0, unita: 1, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 1, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60 }
+    azienda: { kwp: 60, costo: 72000, extra: 2500, iva: 22, ivaRec: 1, om: 750, batteria: 0, costoBatteria: 0, consumo: 180000, f1: 58, f2: 24, f3: 18, spesa: 45000, fissa: 4200, profilo: 'capannone', auc: 0, condivisa: 0, detrazione: 0, detrMix: 0, unita: 1, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 1, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60, degrado: 0.4, orizzonte: 25, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 }
   };
+  // Gli scenari muovono anche le ipotesi tecniche, non solo i prezzi dell'energia:
+  // sono quelle a pesare di piu' e a essere piu' incerte.
   const SCENARI = {
-    prudente: { rincaro: 0, vendita: 0.05 , acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
-    atteso: { rincaro: 2, vendita: 0.08 },
-    ottimista: { rincaro: 3.5, vendita: 0.11 }
+    prudente:  { rincaro: 0,   vendita: 0.05, resaK: 0.92, autoK: 0.88, omK: 1.3,  condivisaK: 0.7 },
+    atteso:    { rincaro: 2,   vendita: 0.10, resaK: 1,    autoK: 1,    omK: 1,    condivisaK: 1 },
+    ottimista: { rincaro: 3.5, vendita: 0.13, resaK: 1.04, autoK: 1.05, omK: 0.85, condivisaK: 1.1 }
   };
+  function applicaScenario(s, nome) {
+    const k = SCENARI[nome]; if (!k) return;
+    const base = isTerra(s) ? RESA_TERRA[s.zona] * (s.tracker ? 1.18 : 1) : RESA_ZONA[s.zona];
+    s.rincaro = k.rincaro; s.vendita = k.vendita;
+    s.resa = Math.round(base * k.resaK);
+    s.omK = k.omK;                                  // vale anche sulla manutenzione da listino
+    s.om = Math.round(s.om * k.omK / 10) * 10;
+    s.condivisa = Math.max(0, Math.min(100, Math.round(s.condivisa * k.condivisaK / 5) * 5));
+    if (s.autoMode === 'manuale') s.autoconsumo = Math.max(10, Math.min(100, Math.round(s.autoconsumo * k.autoK)));
+    else { s.autoMode = 'manuale'; s.autoconsumo = null; }   // il valore vero lo mette render() dal calcolo
+    s.scenarioK = k.autoK;
+  }
+
   const TIPO_LABEL = { casa: 'Abitazione', condominio: 'Condominio', azienda: 'Azienda', terra: 'Impianto a terra' };
 
   /* =====================================================================
@@ -551,6 +566,8 @@
   const notTerra = s => s.tipo !== 'terra';
   const fin = s => s.pagamento === 'finanziamento';
   function ferxTariffa(s) { return FERX_BASE + FERX_BONUS[s.zona]; }
+  // La tariffa premio scende con la taglia: 120 sotto i 200 kW, 110 fino a 600, 100 oltre (piu' il correttivo geografico)
+  function premioTaglia(s) { const base = s.kwp <= 200 ? 0.12 : s.kwp <= 600 ? 0.11 : 0.10; return base + (s.zona === 'nord' ? 0.010 : s.zona === 'centro' ? 0.004 : 0); }
 
   const GROUPS = [
     { title: 'Cliente', fields: [
@@ -600,7 +617,7 @@
       { key: 'autoconsumo', label: 'Autoconsumo', unit: '%', min: 10, max: 100, step: 1, slider: true, showIf: s => s.autoMode === 'manuale' }
     ]},
     { title: 'Energia in eccesso e condivisa', showIf: notTerra, fields: [
-      { key: 'vendita', label: 'Vendita eccesso in rete', unit: '€/kWh', min: 0, max: 0.2, step: 0.005, hint: 'Ritiro dedicato GSE: prezzo zonale orario (0,10–0,13 €/kWh nel 2026) o minimo garantito 0,0475. Lo scambio sul posto è chiuso ai nuovi impianti.' },
+      { key: 'vendita', label: 'Vendita eccesso in rete', unit: '€/kWh', min: 0, max: 0.2, step: 0.005, hint: 'Ritiro dedicato GSE: prezzo zonale orario, in media 0,128 €/kWh nel primo trimestre 2026 (0,115 nel 2025); il minimo garantito è 0,0475. Qui sta 0,10 per prudenza. Lo scambio sul posto è chiuso ai nuovi impianti dal 2025.' },
       { key: 'auc', type: 'check', label: 'Gruppo di autoconsumo collettivo o CER', hint: 'Condomini: l’eccesso delle parti comuni viene condiviso con gli appartamenti. Aziende e case: solo se aderiscono a una comunità energetica.' },
       { key: 'condivisa', label: 'Eccesso assorbito dai membri', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => !!s.auc },
       { key: 'premio', label: 'Tariffa premio GSE', unit: '€/kWh', min: 0, max: 0.15, step: 0.001, showIf: s => !!s.auc, hint: 'Per 20 anni. Fino a 0,12 €/kWh sotto i 200 kW, +0,010 al Nord e +0,004 al Centro.' },
@@ -611,14 +628,14 @@
       { key: 'quotaPrima', label: 'Unità con abitazione principale', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => isCond(s) && !!s.detrMix, derived: s => 'detrazione media ' + fmtDec(detrazioneCond(s), 1) + '%', hint: 'La detrazione torna alle famiglie, non in cassa condominiale.' },
       { key: 'detrazione', type: 'seg', label: 'Detrazione fiscale', options: [[0, 'No'], [36, '36%'], [50, '50%'], [65, '65%']], showIf: s => !isAz(s) && !(isCond(s) && s.detrMix), hint: 'Bonus casa 2026: 50% sull’abitazione principale, 36% sugli altri immobili, tetto 96.000 € per unità. Il 65% era l’ecobonus (pompe di calore, caldaie): nel 2026 non vale per il fotovoltaico, usalo solo se il commercialista lo conferma.' },
       { key: 'detrazione', alias: 'detrCustom', label: 'Altra aliquota', unit: '%', min: 0, max: 110, step: 1, showIf: s => !isAz(s) && !(isCond(s) && s.detrMix), hint: 'Per un valore diverso dai tre standard.' },
-      { key: 'detrAnni', label: 'Rate annuali', unit: 'anni', min: 1, max: 10, step: 1, showIf: s => !isAz(s), hint: 'Il bonus casa si recupera in 10 rate uguali.' },
+      { key: 'detrAnni', label: 'Rate annuali', unit: 'anni', min: 1, max: 10, step: 1, showIf: s => !isAz(s), hint: 'Il bonus casa si recupera <b>obbligatoriamente in 10 quote annuali di pari importo</b>: cambiarlo serve solo a simulare, non \u00e8 una scelta che il cliente pu\u00f2 fare.', warn: true },
       { key: 'reddito', type: 'check', label: 'Reddito energetico (ISEE ≤ 15.000 €)', showIf: isCasa, hint: 'Impianto 2–6 kW pagato dal GSE: 2.000 € + 1.500 €/kW, max 11.000 €. Non si somma alla detrazione. Bando 2026 non ancora riaperto: da verificare.' },
       { key: 'iper', type: 'check', label: 'Iperammortamento 2026', showIf: isAz, hint: 'Maggiorazione del costo deducibile per impianti in autoconsumo (L. 199/2025). Moduli iscritti al registro ENEA cat. B o C, impianto entro il 105% del fabbisogno.' },
       { key: 'iperMagg', label: 'Maggiorazione', unit: '%', min: 0, max: 220, step: 10, showIf: s => isAz(s) && !!s.iper, hint: '180% fino a 2,5 milioni; 100% da 2,5 a 10; 50% da 10 a 20.' },
       { key: 'aliquota', label: 'Aliquota fiscale', unit: '%', min: 0, max: 50, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'IRES 24% per le società di capitali; per ditte e società di persone l’aliquota IRPEF del titolare.' },
       { key: 'anniAmm', label: 'Anni di ammortamento', unit: 'anni', min: 5, max: 20, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'Il risparmio fiscale si spalma su questi anni.' },
       { key: 'sabatini', type: 'check', label: 'Nuova Sabatini green (PMI)', showIf: isAz, hint: 'Il Ministero rimborsa gli interessi di un finanziamento a 5 anni al 3,575%: circa il 10% dell’investimento. Serve un finanziamento bancario o leasing.' },
-      { key: 'pnrrAuto', type: 'check', label: 'Contributo PNRR per le comunità energetiche', showIf: s => !!s.auc, hint: '40% della spesa, entro un massimale per kW che dipende dalla taglia (1.500 €/kW fino a 20 kW, 1.200 fino a 200, 1.100 fino a 600, 1.050 fino a 1.000). Vale solo nei comuni fino a 50.000 abitanti e per impianti in configurazione CER o autoconsumo collettivo. Verifica lo sportello aperto prima di prometterlo.' },
+      { key: 'pnrrAuto', type: 'check', label: 'Contributo PNRR per le comunità energetiche', showIf: s => !!s.auc, hint: '40% della spesa entro un massimale per kW (1.500 €/kW fino a 20 kW, 1.200 fino a 200, 1.100 fino a 600, 1.050 fino a 1.000), nei comuni fino a 50.000 abitanti e solo in configurazione CER o autoconsumo collettivo. <b>Il primo sportello GSE ha chiuso il 30 novembre 2025.</b> Il decreto PNRR 2026 ha rifinanziato la misura con nuove Regole Operative: accordi di concessione entro il 30/6/2026, entrata in esercizio entro il 31/12/2027. Verifica sul sito GSE che ci sia una finestra aperta prima di metterlo nell’offerta.', warn: true },
       { key: 'fondoPerduto', label: 'Altro contributo a fondo perduto', unit: '%', min: 0, max: 60, step: 1, hint: 'Bandi regionali e comunali (Lombardia "Linea Impresa Efficiente" fino al 45% per le PMI), ZES Unica al Sud (fino al 60%), PNRR per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti (40%). Zero se non c’è un bando aperto. Viene tolto dall’investimento nel primo anno.' },
       { key: 'contoTermico', label: 'Conto Termico 3.0', unit: '%', min: 0, max: 65, step: 1, hint: 'Contributo GSE a fondo perduto: sul fotovoltaico vale solo per pubbliche amministrazioni ed edifici del terziario, e solo abbinato alla sostituzione della caldaia con una pompa di calore. Su case e condomini incentiva la pompa di calore, non i pannelli. Zero se non ricorre.' }
     ]},
@@ -927,13 +944,15 @@
     const prodAnno1 = s.kwp * s.resa;
     const ac = calcolaAutoconsumo(s, prodAnno1, consumo);
     const quotaCalc = ac.quota;
+    // Se uno scenario ha chiesto di partire dal calcolato, lo fisso qui la prima volta
+    if (s.autoMode === 'manuale' && (s.autoconsumo == null || !isFinite(s.autoconsumo))) s.autoconsumo = Math.round(quotaCalc * 100 * (s.scenarioK || 1));
     const quotaBase = s.autoMode === 'calc' ? quotaCalc : s.autoconsumo / 100;
     const quota = autoconsumoConBatteria(s, quotaBase, prodAnno1, consumo);
     const detrRate = detrazioneRate(s);
     // contributi una tantum
     const reddito = (isCasa(s) && s.reddito) ? Math.min(11000, 2000 + 1500 * s.kwp) : 0;
     const omListino = s.manutAuto ? manutenzioneListino(s) : null;
-    const omAnno = omListino != null ? omListino : s.om;
+    const omAnno = (omListino != null ? omListino * (s.omK || 1) : s.om);
     const pnrr = contributoPnrr(s);
     const fondo = investNetto * s.fondoPerduto / 100 + pnrr;
     const sabatini = (isAz(s) && s.sabatini) ? investNetto * 0.10 : 0;
@@ -954,6 +973,7 @@
     const esborsoNol = NL.iniziale;
     const esborso2 = nol ? esborsoNol : esborsoFin;
     const rows = [];
+    let avvisiResiduo = null;
     let cumCassa = -investDaPagare, cumFin = -esborso2;
     const cfCassa = [-investDaPagare], cfFin = [-esborso2];
     const annoBatt = 12;
@@ -964,7 +984,7 @@
       const prezzo = pEvit * Math.pow(1 + s.rincaro / 100, t - 1) * ivaF;
       const risparmio = auto * prezzo;
       const vendita = surplus * s.vendita;
-      const auc = (s.auc && t <= 20) ? surplus * s.condivisa / 100 * (s.premio + s.restituzione) : 0;
+      const auc = (s.auc && t <= 20) ? surplus * s.condivisa / 100 * (Math.min(s.premio, premioTaglia(s)) + s.restituzione) : 0;
       const nRate = Math.max(1, Math.round(s.detrAnni)); const detr = t <= nRate ? invest * detrRate / 100 / nRate : 0;
       const iper = t <= s.anniAmm ? iperAnno : 0;
       const contributi = t === 1 ? fondo + sabatini + contoTermico : 0;
@@ -996,6 +1016,21 @@
       for (let i = 1; i < cum.length; i++) { if (cum[i] >= 0) return (i - 1) + (-prev) / (cum[i] - prev); prev = cum[i]; }
       return null;
     };
+    // Se il piano di pagamento dura oltre l'orizzonte, quello che resta da pagare va tolto: altrimenti
+    // si mostrerebbe il beneficio di N anni pagando solo una parte delle rate.
+    let residuo = 0;
+    if (nol) { residuo = Math.max(0, NL.anni - H) * NL.canoneAnno + (NL.anni > H ? NL.riscatto : 0); }
+    else if (fin(s) && s.durata / 12 > H) {
+      const r = s.tasso / 100 / 12, n = H * 12, N0 = s.durata;
+      residuo = r === 0 ? finanziato * (1 - n / N0)
+        : finanziato * (Math.pow(1 + r, N0) - Math.pow(1 + r, n)) / (Math.pow(1 + r, N0) - 1);
+    }
+    if (residuo > 0) {
+      rows[rows.length - 1].flussoFin -= residuo;
+      rows[rows.length - 1].cumFin -= residuo;
+      cfFin[cfFin.length - 1] -= residuo;
+      avvisiResiduo = 'Il pagamento dura oltre i ' + H + ' anni considerati: restano ' + fmtEur(residuo) + ' da pagare, tolti dal risultato dell\u2019ultimo anno. Allunga l\u2019orizzonte per vedere il quadro intero.';
+    }
     const cumC = [-investDaPagare].concat(rows.map(r => r.cumCassa));
     const cumF = [-esborso2].concat(rows.map(r => r.cumFin));
     const isFin = fin(s) || nol;
@@ -1005,6 +1040,7 @@
     const bollettaFutura = (s.spesa - s.fissa) * (1 + s.aumento / 100) * ivaF + s.fissa * ivaF;
     // avvisi
     const avvisi = [];
+    if (avvisiResiduo) avvisi.push(avvisiResiduo);
     if (s.f1 + s.f2 + s.f3 !== 100) avvisi.push('Le fasce F1+F2+F3 fanno ' + (s.f1 + s.f2 + s.f3) + '% invece di 100%: correggile, il calcolo dell’autoconsumo ne risente.');
     if (prodAnno1 > consumo * 1.05 && isAz(s) && s.iper) avvisi.push('L’impianto produce più del 105% del fabbisogno (' + fmtInt(prodAnno1) + ' contro ' + fmtInt(consumo) + ' kWh): oltre questo limite l’iperammortamento non spetta. Riduci la potenza o alza i consumi previsti.');
     if (prodAnno1 > consumo * 1.3) avvisi.push('L’impianto produce molto più di quanto il cliente consuma: l’eccesso venduto in rete vale poco. Valuta una potenza più bassa.');
@@ -1019,9 +1055,9 @@
     if (nol && detrazioneRate(s) > 0) avvisi.push('Col noleggio operativo il cliente non è proprietario dell’impianto: la detrazione fiscale non spetta, e il piano non la conteggia.');
     if (nol && isAz(s) && s.iper) avvisi.push('Col noleggio operativo non spetta l’iperammortamento (non c’è un bene da ammortizzare): il canone è però interamente deducibile, e il piano lo conteggia.');
     if (s.pnrrAuto && !s.auc) avvisi.push('Il contributo PNRR vale solo per impianti in configurazione CER o autoconsumo collettivo: attiva la comunità energetica o togli la spunta.');
-    if (s.pnrrAuto && s.auc) avvisi.push('Contributo PNRR conteggiato (' + fmtEur(contributoPnrr(s)) + '): verifica che il comune abbia meno di 50.000 abitanti e che lo sportello sia aperto.');
+    if (s.pnrrAuto && s.auc) avvisi.push('Contributo PNRR conteggiato (' + fmtEur(contributoPnrr(s)) + '): il primo sportello GSE ha chiuso il 30/11/2025 e la misura è stata rifinanziata con nuove regole. Prima di metterlo nell’offerta verifica sul sito GSE che ci sia una finestra aperta e che il comune abbia meno di 50.000 abitanti.');
     if (isCasa(s) && s.auc) avvisi.push('Per una casa l’energia condivisa vale solo aderendo a una comunità energetica esistente nella stessa cabina primaria.');
-    if (invest * detrRate / 100 > 96000 * (isCond(s) ? s.unita : 1) * detrRate / 100 && detrRate > 0) avvisi.push('La spesa supera il tetto di 96.000 € per unità su cui si calcola la detrazione.');
+    if (detrRate > 0 && invest > 96000 * (isCond(s) ? s.unita : 1)) avvisi.push('La spesa (' + fmtEur(invest) + ') supera il tetto di 96.000 € per unità su cui si calcola la detrazione: il piano la calcola comunque sull’intera spesa, quindi qui la sovrastima.');
     return {
       H, invest, investNetto, investDaPagare, acconto, finanziato, speseBanca, esborsoFin: esborso2, rata: nol ? NL.canoneAnno / 12 : rata, fin: isFin, rows, pEvit, ivaF,
       consumo, quota, quotaCalc, quotaBase, surplusMesi: ac.surplusMesi, detrRate, reddito, fondo, sabatini, contoTermico, iperTot, iperAnno,
@@ -2355,7 +2391,7 @@
   const scen = document.createElement('div'); scen.className = 'scenarios'; scen.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px';
   scen.innerHTML = '<span style="font-size:12px;color:var(--muted);align-self:center">Scenario:</span>' + Object.keys(SCENARI).map(k => `<button class="chip" type="button" data-scen="${k}">${k.charAt(0).toUpperCase() + k.slice(1)}</button>`).join('');
   groupsEl.parentNode.insertBefore(scen, groupsEl);
-  scen.querySelectorAll('[data-scen]').forEach(b => b.addEventListener('click', () => { Object.assign(state, SCENARI[b.dataset.scen]); onChange(); }));
+  scen.querySelectorAll('[data-scen]').forEach(b => b.addEventListener('click', () => { applicaScenario(state, b.dataset.scen); onChange(); }));
 
   buildSidebar();
   if (window.matchMedia && window.matchMedia('(max-width: 960px)').matches) groupsEl.querySelectorAll('details.group').forEach((d, i) => { d.open = i === 0; });
