@@ -231,6 +231,14 @@
   .inc p { font-size: 13px; color: var(--ink-2); line-height: 1.5; margin-top: 3px; max-width: 78ch; }
   .inc.na-list .it { opacity: .75; }
 
+  .cer-top { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; align-items: center; }
+  .cer-top h3, .three .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .cer-top p, .cer-steps li, .cer-list li, #cer .three .card p { font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+  .cer-top p b, .cer-steps b, .cer-list b, #cer .three .card p b { color: var(--ink); }
+  .cer-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  .cer-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  .cer-svg { max-width: 100%; }
+  @media (max-width: 960px) { .cer-top { grid-template-columns: 1fr; } }
   .assump { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 24px; }
   .assump dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13.5px; }
   .assump dt { color: var(--ink-2); }
@@ -379,6 +387,11 @@
         <details class="noprint" style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;color:var(--muted)">Incentivi non applicabili a questo cliente</summary><div class="inc na-list" id="incNa" style="margin-top:8px"></div></details>
       </section>
 
+      <section class="block" id="secCer">
+        <header><h2>La Comunità Energetica</h2><p class="sub" id="cerSub"></p></header>
+        <div id="cer"></div>
+      </section>
+
       <section class="block">
         <header><h2>Quando rientra l'investimento</h2><p class="sub">Soldi spesi e soldi recuperati, anno dopo anno. Quando la linea supera lo zero l'impianto si è ripagato: da lì in poi è guadagno.</p></header>
         <div class="card">
@@ -474,7 +487,7 @@
     // eccesso
     vendita: 0.08, auc: 1, condivisa: 80, premio: 0.12, restituzione: 0.009,
     // incentivi
-    detrazione: 36, quotaPrima: 60, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0,
+    detrazione: 36, detrMix: 1, detrAnni: 10, quotaPrima: 60, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0,
     // pagamento
     pagamento: 'finanziamento', acconto: 0, tasso: 5.9, durata: 60, istruttoria: 250, imposta: 0.25, incasso: 2.75, attualizzazione: 5,
     // condominio
@@ -485,13 +498,13 @@
     provv: 6
   };
   const PRESET_TIPO = {
-    casa: { kwp: 4, costo: 7200, extra: 200, iva: 10, ivaRec: 0, om: 80, batteria: 0, costoBatteria: 0, consumo: 3800, f1: 25, f2: 30, f3: 45, spesa: 1100, fissa: 200, profilo: 'casa', auc: 0, condivisa: 0, detrazione: 50, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'cassa', durata: 60 },
-    condominio: { kwp: 30, costo: 42000, extra: 1500, iva: 10, ivaRec: 0, om: 420, batteria: 0, costoBatteria: 0, consumo: 120000, f1: 33, f2: 28, f3: 39, spesa: 34000, fissa: 3000, profilo: 'condominio_pdc', auc: 1, condivisa: 80, detrazione: 36, quotaPrima: 60, unita: 30, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60 },
+    casa: { kwp: 4, costo: 7200, extra: 200, iva: 10, ivaRec: 0, om: 80, batteria: 0, costoBatteria: 0, consumo: 3800, f1: 25, f2: 30, f3: 45, spesa: 1100, fissa: 200, profilo: 'casa', auc: 0, condivisa: 0, detrazione: 50, detrMix: 0, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'cassa', durata: 60, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
+    condominio: { kwp: 30, costo: 42000, extra: 1500, iva: 10, ivaRec: 0, om: 420, batteria: 0, costoBatteria: 0, consumo: 120000, f1: 33, f2: 28, f3: 39, spesa: 34000, fissa: 3000, profilo: 'condominio_pdc', auc: 1, condivisa: 80, detrazione: 36, detrMix: 1, quotaPrima: 60, unita: 30, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
     terra: { kwp: 1000, costo: 750000, extra: 80000, iva: 22, ivaRec: 1, om: 0, batteria: 0, costoBatteria: 0, resa: 1250, degrado: 0.5, orizzonte: 25, profilo: 'continuo', auc: 0, condivisa: 0, detrazione: 0, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', acconto: 40, tasso: 4.5, durata: 216, istruttoria: 0, imposta: 0, incasso: 0, modVendita: 'ferx', ferx: 87, tracker: 0 },
-    azienda: { kwp: 60, costo: 72000, extra: 2500, iva: 22, ivaRec: 1, om: 750, batteria: 0, costoBatteria: 0, consumo: 180000, f1: 58, f2: 24, f3: 18, spesa: 45000, fissa: 4200, profilo: 'capannone', auc: 0, condivisa: 0, detrazione: 0, unita: 1, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 1, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60 }
+    azienda: { kwp: 60, costo: 72000, extra: 2500, iva: 22, ivaRec: 1, om: 750, batteria: 0, costoBatteria: 0, consumo: 180000, f1: 58, f2: 24, f3: 18, spesa: 45000, fissa: 4200, profilo: 'capannone', auc: 0, condivisa: 0, detrazione: 0, detrMix: 0, unita: 1, iper: 1, iperMagg: 180, aliquota: 24, anniAmm: 10, sabatini: 1, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'finanziamento', durata: 60 }
   };
   const SCENARI = {
-    prudente: { rincaro: 0, vendita: 0.05 },
+    prudente: { rincaro: 0, vendita: 0.05 , acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
     atteso: { rincaro: 2, vendita: 0.08 },
     ottimista: { rincaro: 3.5, vendita: 0.11 }
   };
@@ -557,16 +570,19 @@
       { key: 'restituzione', label: 'Restituzione ARERA', unit: '€/kWh', min: 0, max: 0.02, step: 0.001, showIf: s => !!s.auc }
     ]},
     { title: 'Incentivi', showIf: notTerra, fields: [
-      { key: 'detrazione', type: 'seg', label: 'Detrazione fiscale (bonus casa)', options: [[50, '50% prima casa'], [36, '36% altri'], [0, 'Nessuna']], showIf: isCasa, hint: 'In 10 rate annuali, tetto 96.000 € per unità.' },
-      { key: 'quotaPrima', label: 'Unità con abitazione principale', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: isCond, derived: s => 'detrazione media ' + fmtDec(detrazioneCond(s), 1) + '%', hint: 'Chi abita nel palazzo scarica il 50%, gli altri (seconde case, affitti) il 36%. La detrazione torna alle famiglie, non in cassa condominiale.' },
-      { key: 'reddito', type: 'check', label: 'Reddito energetico (ISEE ≤ 15.000 €)', showIf: isCasa, hint: 'Impianto 2–6 kW pagato dal GSE: 2.000 € + 1.500 €/kW, max 11.000 €. Bando 2026 non ancora riaperto: da verificare.' },
+      { key: 'detrMix', type: 'check', label: 'Detrazione media dalle famiglie che ci abitano', showIf: isCond, hint: 'Chi ha nel palazzo l’abitazione principale scarica il 50%, gli altri (seconde case, affitti) il 36%: la media pesa le due aliquote. Togli la spunta per scegliere un’aliquota unica.' },
+      { key: 'quotaPrima', label: 'Unità con abitazione principale', unit: '%', min: 0, max: 100, step: 5, slider: true, showIf: s => isCond(s) && !!s.detrMix, derived: s => 'detrazione media ' + fmtDec(detrazioneCond(s), 1) + '%', hint: 'La detrazione torna alle famiglie, non in cassa condominiale.' },
+      { key: 'detrazione', type: 'seg', label: 'Detrazione fiscale', options: [[0, 'No'], [36, '36%'], [50, '50%'], [65, '65%']], showIf: s => !isAz(s) && !(isCond(s) && s.detrMix), hint: 'Bonus casa 2026: 50% sull’abitazione principale, 36% sugli altri immobili, tetto 96.000 € per unità. Il 65% era l’ecobonus (pompe di calore, caldaie): nel 2026 non vale per il fotovoltaico, usalo solo se il commercialista lo conferma.' },
+      { key: 'detrazione', alias: 'detrCustom', label: 'Altra aliquota', unit: '%', min: 0, max: 110, step: 1, showIf: s => !isAz(s) && !(isCond(s) && s.detrMix), hint: 'Per un valore diverso dai tre standard.' },
+      { key: 'detrAnni', label: 'Rate annuali', unit: 'anni', min: 1, max: 10, step: 1, showIf: s => !isAz(s), hint: 'Il bonus casa si recupera in 10 rate uguali.' },
+      { key: 'reddito', type: 'check', label: 'Reddito energetico (ISEE ≤ 15.000 €)', showIf: isCasa, hint: 'Impianto 2–6 kW pagato dal GSE: 2.000 € + 1.500 €/kW, max 11.000 €. Non si somma alla detrazione. Bando 2026 non ancora riaperto: da verificare.' },
       { key: 'iper', type: 'check', label: 'Iperammortamento 2026', showIf: isAz, hint: 'Maggiorazione del costo deducibile per impianti in autoconsumo (L. 199/2025). Moduli iscritti al registro ENEA cat. B o C, impianto entro il 105% del fabbisogno.' },
       { key: 'iperMagg', label: 'Maggiorazione', unit: '%', min: 0, max: 220, step: 10, showIf: s => isAz(s) && !!s.iper, hint: '180% fino a 2,5 milioni; 100% da 2,5 a 10; 50% da 10 a 20.' },
       { key: 'aliquota', label: 'Aliquota fiscale', unit: '%', min: 0, max: 50, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'IRES 24% per le società di capitali; per ditte e società di persone l’aliquota IRPEF del titolare.' },
       { key: 'anniAmm', label: 'Anni di ammortamento', unit: 'anni', min: 5, max: 20, step: 1, showIf: s => isAz(s) && !!s.iper, hint: 'Il risparmio fiscale si spalma su questi anni.' },
       { key: 'sabatini', type: 'check', label: 'Nuova Sabatini green (PMI)', showIf: isAz, hint: 'Il Ministero rimborsa gli interessi di un finanziamento a 5 anni al 3,575%: circa il 10% dell’investimento. Serve un finanziamento bancario o leasing.' },
-      { key: 'fondoPerduto', label: 'Contributo a fondo perduto', unit: '%', min: 0, max: 60, step: 1, showIf: s => !isCasa(s), hint: 'Bandi regionali (Lombardia "Linea Impresa Efficiente" fino al 45%), ZES Unica al Sud (fino al 60%), PNRR CER nei comuni sotto i 50.000 abitanti (40%). Zero se non c’è un bando aperto.' },
-      { key: 'contoTermico', label: 'Conto Termico 3.0', unit: '%', min: 0, max: 65, step: 1, showIf: isAz, hint: 'Solo per edifici del terziario e solo se il fotovoltaico è abbinato alla sostituzione della caldaia con pompa di calore. Zero se non ricorre.' }
+      { key: 'fondoPerduto', label: 'Contributo a fondo perduto', unit: '%', min: 0, max: 60, step: 1, hint: 'Bandi regionali e comunali (Lombardia "Linea Impresa Efficiente" fino al 45% per le PMI), ZES Unica al Sud (fino al 60%), PNRR per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti (40%). Zero se non c’è un bando aperto. Viene tolto dall’investimento nel primo anno.' },
+      { key: 'contoTermico', label: 'Conto Termico 3.0', unit: '%', min: 0, max: 65, step: 1, hint: 'Contributo GSE a fondo perduto: sul fotovoltaico vale solo per pubbliche amministrazioni ed edifici del terziario, e solo abbinato alla sostituzione della caldaia con una pompa di calore. Su case e condomini incentiva la pompa di calore, non i pannelli. Zero se non ricorre.' }
     ]},
     { title: 'Vendita dell’energia', showIf: isTerra, fields: [
       { key: 'modVendita', type: 'seg', label: 'Come si vende l’energia', options: [['ferx', 'FER-X'], ['merchant', 'Mercato'], ['ppa', 'PPA']], hint: 'FER-X: tariffa GSE fissa per 20 anni (fino a 1 MW senza asta). Mercato: prezzo orario zonale. PPA: contratto a prezzo fisso con un acquirente.' },
@@ -669,7 +685,7 @@
   function investimentoNetto(s) { return s.costo + s.extra + (s.batteria > 0 ? s.costoBatteria : 0); }
   function investimentoTotale(s) { return investimentoNetto(s) * ivaFattore(s); }
   function detrazioneCond(s) { return 50 * s.quotaPrima / 100 + 36 * (1 - s.quotaPrima / 100); }
-  function detrazioneRate(s) { return isCasa(s) ? (s.reddito ? 0 : s.detrazione) : isCond(s) ? detrazioneCond(s) : 0; }
+  function detrazioneRate(s) { if (isAz(s) || isTerra(s)) return 0; if (isCasa(s) && s.reddito) return 0; if (isCond(s) && s.detrMix) return detrazioneCond(s); return s.detrazione; }
   function consumoFuturo(s) { return s.consumo * (1 + s.aumento / 100); }
   function prodShape(s) { const sh = PV_SHAPE[s.zona]; const tot = sh.reduce((a, b) => a + b, 0); return sh.map(v => v / tot); }
   function consShape(s) { const sh = PROFILI[s.profilo].shape; const tot = sh.reduce((a, b) => a + b, 0); return sh.map(v => v / tot); }
@@ -846,9 +862,9 @@
     const detrRate = detrazioneRate(s);
     // contributi una tantum
     const reddito = (isCasa(s) && s.reddito) ? Math.min(11000, 2000 + 1500 * s.kwp) : 0;
-    const fondo = (!isCasa(s) ? investNetto * s.fondoPerduto / 100 : 0);
+    const fondo = investNetto * s.fondoPerduto / 100;
     const sabatini = (isAz(s) && s.sabatini) ? investNetto * 0.10 : 0;
-    const contoTermico = isAz(s) ? investNetto * s.contoTermico / 100 : 0;
+    const contoTermico = investNetto * s.contoTermico / 100;
     const iperTot = (isAz(s) && s.iper) ? investNetto * s.iperMagg / 100 * s.aliquota / 100 : 0;
     const iperAnno = iperTot / Math.max(1, s.anniAmm);
     // finanziamento: calcolato sempre, per il confronto nel grafico
@@ -871,7 +887,7 @@
       const risparmio = auto * prezzo;
       const vendita = surplus * s.vendita;
       const auc = (s.auc && t <= 20) ? surplus * s.condivisa / 100 * (s.premio + s.restituzione) : 0;
-      const detr = t <= 10 ? invest * detrRate / 100 / 10 : 0;
+      const nRate = Math.max(1, Math.round(s.detrAnni)); const detr = t <= nRate ? invest * detrRate / 100 / nRate : 0;
       const iper = t <= s.anniAmm ? iperAnno : 0;
       const contributi = t === 1 ? fondo + sabatini + contoTermico : 0;
       const incentivi = detr + iper + contributi;
@@ -905,6 +921,8 @@
     if (prodAnno1 > consumo * 1.3) avvisi.push('L’impianto produce molto più di quanto il cliente consuma: l’eccesso venduto in rete vale poco. Valuta una potenza più bassa.');
     if (quota < 0.5) avvisi.push('Solo il ' + fmtInt(quota * 100) + '% dell’energia viene consumata sul posto: il rientro si allunga. Una batteria o una potenza minore migliorano il quadro.');
     if (isCasa(s) && s.reddito && (s.kwp < 2 || s.kwp > 6)) avvisi.push('Il reddito energetico copre impianti da 2 a 6 kW: con ' + fmtDec(s.kwp, 1) + ' kWp non spetta.');
+    if (detrRate > 50) avvisi.push('Detrazione al ' + fmtInt(detrRate) + '%: nel 2026 il fotovoltaico rientra nel bonus casa (50% prima casa, 36% altri). Il 65% dell’ecobonus non si applica ai pannelli: da confermare con il commercialista prima di presentarlo.');
+    if (s.contoTermico > 0 && !isAz(s)) avvisi.push('Conto Termico al ' + fmtInt(s.contoTermico) + '%: sul fotovoltaico di case e condomini non spetta (solo PA ed edifici del terziario con pompa di calore). Lascialo solo se è riferito a una pompa di calore abbinata.');
     if (isCasa(s) && s.reddito && s.detrazione) avvisi.push('Con il reddito energetico non si somma la detrazione fiscale: il piano la esclude.');
     if (isAz(s) && s.sabatini && !isFin) avvisi.push('La Nuova Sabatini richiede un finanziamento bancario o un leasing: con pagamento in cassa non spetta.');
     if (isCasa(s) && s.auc) avvisi.push('Per una casa l’energia condivisa vale solo aderendo a una comunità energetica esistente nella stessa cabina primaria.');
@@ -1020,7 +1038,7 @@
   function onChange(fromTyping) { saveState(); render(); syncSidebar(fromTyping); }
   function render() {
     const m = compute(state); lastModel = m;
-    renderHead(m); renderFacts(m); renderKpis(m); renderStory(m); renderWhy(m); renderFamily(m); renderBill(m); renderMonth(m); renderInc(m); renderCum(m); renderFin(m); renderTable(m); renderSteps(m); renderFaq(m); renderAssump(m); renderContact(m); renderAgent(m);
+    renderHead(m); renderFacts(m); renderKpis(m); renderStory(m); renderWhy(m); renderFamily(m); renderBill(m); renderMonth(m); renderInc(m); renderCer(m); renderCum(m); renderFin(m); renderTable(m); renderSteps(m); renderFaq(m); renderAssump(m); renderContact(m); renderAgent(m);
   }
   const soggetto = s => isCasa(s) ? 'la famiglia' : isCond(s) ? 'il condominio' : 'l’azienda';
   const Soggetto = s => { const t = soggetto(s); return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -1101,7 +1119,7 @@
     if (s.auc && y1.auc > 0) p2 += `${isCond(s) ? ' e, quando gli appartamenti la consumano nella stessa ora, il GSE la premia per 20 anni come energia condivisa' : ' e la parte condivisa nella comunità energetica viene premiata dal GSE per 20 anni'} (<b>${fmtEur(y1.auc)}</b>)`;
     p2 += '. ';
     const inc = [];
-    if (m.detrRate > 0) inc.push(`la detrazione fiscale del <b>${fmtDec(m.detrRate, m.detrRate % 1 ? 1 : 0)}%</b> restituisce <b>${fmtEur(y1.detr)}</b> l’anno per 10 anni`);
+    if (m.detrRate > 0) inc.push(`la detrazione fiscale del <b>${fmtDec(m.detrRate, m.detrRate % 1 ? 1 : 0)}%</b> restituisce <b>${fmtEur(y1.detr)}</b> l’anno per ${fmtInt(s.detrAnni)} anni`);
     if (m.iperTot > 0) inc.push(`l’iperammortamento al ${fmtInt(s.iperMagg)}% vale <b>${fmtEur(m.iperTot)}</b> di tasse in meno, ${fmtEur(m.iperAnno)} l’anno per ${fmtInt(s.anniAmm)} anni`);
     if (m.sabatini > 0) inc.push(`la Nuova Sabatini green rimborsa circa <b>${fmtEur(m.sabatini)}</b> di interessi`);
     if (m.fondo > 0) inc.push(`il contributo a fondo perduto del ${fmtInt(s.fondoPerduto)}% porta <b>${fmtEur(m.fondo)}</b>`);
@@ -1134,7 +1152,7 @@
       document.getElementById('whySub').textContent = 'Tre motivi per cui ha senso in questa casa.';
       cards = [
         ['Ogni kWh non comprato vale ' + fmtDec(m.pEvit * m.ivaF, 2) + ' €', 'La corrente prodotta sul tetto sostituisce quella più cara: quella che la famiglia compra oggi. Il ' + fmtInt(m.quota * 100) + '% della produzione resta in casa' + (s.batteria > 0 ? ', anche la sera grazie alla batteria' : '') + '.'],
-        ['Lo Stato ne paga una parte', m.detrRate > 0 ? 'Con il bonus casa il ' + fmtInt(m.detrRate) + '% della spesa torna in 10 anni sotto forma di tasse in meno: ' + fmtEur(y1.detr * 10) + ' in totale.' : m.reddito > 0 ? 'Con il reddito energetico il GSE paga ' + fmtEur(m.reddito) + ' dell’impianto.' : 'Verifica con il commercialista quale detrazione spetta: il bonus casa vale il 50% sulla prima casa e il 36% sulle altre.'],
+        ['Lo Stato ne paga una parte', m.detrRate > 0 ? 'Con la detrazione del ' + fmtInt(m.detrRate) + '% una parte della spesa torna in ' + fmtInt(s.detrAnni) + ' anni sotto forma di tasse in meno: ' + fmtEur(y1.detr * s.detrAnni) + ' in totale.' : m.reddito > 0 ? 'Con il reddito energetico il GSE paga ' + fmtEur(m.reddito) + ' dell’impianto.' : 'Verifica con il commercialista quale detrazione spetta: il bonus casa vale il 50% sulla prima casa e il 36% sulle altre.'],
         ['Protezione dai rincari', 'Per 25–30 anni una parte della corrente ha prezzo zero, qualunque cosa faccia il mercato. Il piano ipotizza un rincaro del ' + fmtDec(s.rincaro, 1) + '% l’anno: puoi cambiarlo e vedere cosa succede.']
       ];
     } else if (isCond(s)) {
@@ -1246,45 +1264,127 @@
     const on = [], off = [], na = [];
     if (isTerra(s)) { renderIncTerra(m); return; }
     const item = (st, title, val, txt) => `<div class="it"><span class="st ${st}">${st === 'on' ? 'nel piano' : st === 'off' ? 'disponibile' : st === 'chk' ? 'da verificare' : 'non spetta'}</span><div><h3>${title}${val ? '<span>' + val + '</span>' : ''}</h3><p>${txt}</p></div></div>`;
-    // detrazione
-    if (isCasa(s) || isCond(s)) {
+    const nRate = fmtInt(s.detrAnni);
+    // Detrazione fiscale
+    if (!isAz(s)) {
       const txt = 'Bonus casa (art. 16-bis TUIR): 50% per l’abitazione principale, 36% per gli altri immobili, tetto 96.000 € per unità, in 10 rate annuali IRPEF.' + (isCond(s) ? ' Sulle parti comuni ogni famiglia scarica la propria quota millesimale con la propria aliquota: la detrazione non entra in cassa condominiale.' : '');
-      if (m.detrRate > 0) on.push(item('on', 'Detrazione fiscale ' + fmtDec(m.detrRate, m.detrRate % 1 ? 1 : 0) + '%', fmtEur(y1.detr) + ' l’anno × 10', txt));
+      if (m.detrRate > 0) on.push(item(m.detrRate > 50 ? 'chk' : 'on', 'Detrazione fiscale ' + fmtDec(m.detrRate, m.detrRate % 1 ? 1 : 0) + '%', fmtEur(y1.detr) + ' l’anno × ' + nRate, txt + (m.detrRate > 50 ? ' <b>Attenzione:</b> il 65% (ecobonus) nel 2026 non si applica al fotovoltaico: da confermare con il commercialista.' : '')));
       else off.push(item('off', 'Detrazione fiscale (bonus casa)', '', txt + (m.reddito ? ' Non cumulabile con il reddito energetico.' : '')));
     }
     if (isCasa(s)) {
       const txt = 'Impianto da 2 a 6 kW pagato dal GSE per famiglie con ISEE fino a 15.000 € (30.000 con almeno 4 figli): 2.000 € + 1.500 €/kW, massimo 11.000 €. Il bando 2026 non è ancora riaperto: verificare sul sito GSE.';
-      if (m.reddito > 0) on.push(item('chk', 'Reddito energetico', fmtEur(m.reddito) + ' una tantum', txt));
-      else off.push(item('off', 'Reddito energetico', '', txt));
-      na.push(item('na', 'Conto Termico 3.0', '', 'Per il fotovoltaico non vale sulle case private: solo pubbliche amministrazioni ed edifici del terziario, e solo abbinato a una pompa di calore.'));
-      na.push(item('na', 'Iperammortamento, Nuova Sabatini, bandi imprese', '', 'Riservati alle imprese con partita IVA.'));
+      if (m.reddito > 0) on.push(item('chk', 'Reddito energetico', fmtEur(m.reddito) + ' una tantum', txt)); else off.push(item('off', 'Reddito energetico', '', txt));
     }
     if (isAz(s)) {
       const txtI = 'Legge di Bilancio 2026 (L. 199/2025): il costo dell’impianto in autoconsumo si deduce maggiorato del 180% (fino a 2,5 milioni; 100% fino a 10; 50% fino a 20). Con IRES al 24% vale circa il 43% dell’investimento in tasse in meno, spalmato sugli anni di ammortamento. Investimenti dal 1/1/2026 al 30/9/2028; moduli iscritti al registro ENEA categoria B o C (celle prodotte in UE); impianto entro il 105% del fabbisogno. Servono perizia tecnica asseverata e certificazione contabile. Il decreto attuativo e la piattaforma GSE erano ancora attesi a luglio 2026.';
       if (m.iperTot > 0) on.push(item('chk', 'Iperammortamento ' + fmtInt(s.iperMagg) + '%', fmtEur(m.iperAnno) + ' l’anno × ' + fmtInt(s.anniAmm), txtI)); else off.push(item('off', 'Iperammortamento 2026', '', txtI));
       const txtS = 'Per le PMI: il Ministero rimborsa gli interessi di un finanziamento bancario o leasing a 5 anni, calcolati al 3,575% convenzionale, cioè circa il 10% dell’investimento, a fondo perduto. Cumulabile con l’iperammortamento.';
       if (m.sabatini > 0) on.push(item('on', 'Nuova Sabatini green', fmtEur(m.sabatini), txtS)); else off.push(item('off', 'Nuova Sabatini green', '', txtS));
-      const txtF = 'Bandi regionali (Lombardia "Linea Impresa Efficiente": fino al 45% per le PMI), ZES Unica nel Mezzogiorno (credito d’imposta fino al 60%), PNRR per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti (40%, lavori entro il 30/6/2026). Dipende da dove si trova l’azienda e dai bandi aperti.';
-      if (m.fondo > 0) on.push(item('chk', 'Contributo a fondo perduto ' + fmtInt(s.fondoPerduto) + '%', fmtEur(m.fondo), txtF)); else off.push(item('off', 'Contributi a fondo perduto (bandi)', '', txtF));
-      const txtC = 'Fino al 45–65% per gli edifici del terziario, ma il fotovoltaico è incentivato solo se realizzato insieme alla sostituzione dell’impianto di riscaldamento con una pompa di calore elettrica.';
-      if (m.contoTermico > 0) on.push(item('chk', 'Conto Termico 3.0 ' + fmtInt(s.contoTermico) + '%', fmtEur(m.contoTermico), txtC)); else off.push(item('off', 'Conto Termico 3.0', '', txtC));
-      na.push(item('na', 'Transizione 5.0 (credito d’imposta)', '', 'Terminato il 31/12/2025: sostituito dall’iperammortamento.'));
-      na.push(item('na', 'Bonus casa 50% / 36%', '', 'Riservato alle persone fisiche su immobili residenziali.'));
     }
-    if (isCond(s)) {
-      const txtF = 'PNRR per configurazioni di autoconsumo collettivo nei comuni sotto i 50.000 abitanti: 40% a fondo perduto, ma con lavori conclusi entro il 30/6/2026. Bandi regionali per condomini quando aperti.';
-      if (m.fondo > 0) on.push(item('chk', 'Contributo a fondo perduto ' + fmtInt(s.fondoPerduto) + '%', fmtEur(m.fondo), txtF)); else off.push(item('off', 'Contributi a fondo perduto', '', txtF));
-      na.push(item('na', 'Iperammortamento e Nuova Sabatini', '', 'Riservati alle imprese.'));
-      na.push(item('na', 'Conto Termico 3.0', '', 'Per il fotovoltaico non vale sugli edifici residenziali.'));
-    }
-    // AUC / CER
-    const txtA = 'Tariffa premio GSE per 20 anni sull’energia condivisa nella stessa ora tra impianto e membri (DM CACER): fino a 120 €/MWh sotto i 200 kW, +10 al Nord e +4 al Centro, più la restituzione ARERA di circa 9 €/MWh. Richiedibile fino al 31/12/2027.';
+    // Fondo perduto: per tutti
+    const txtF = isAz(s)
+      ? 'Bandi regionali (Lombardia "Linea Impresa Efficiente": fino al 45% per le PMI), ZES Unica nel Mezzogiorno (credito d’imposta fino al 60%), PNRR per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti (40%, lavori entro il 30/6/2026). Dipende da dove si trova l’azienda e dai bandi aperti.'
+      : isCond(s)
+        ? 'PNRR per configurazioni di autoconsumo collettivo nei comuni sotto i 50.000 abitanti: 40% a fondo perduto, con lavori conclusi entro il 30/6/2026. Bandi regionali o comunali per condomini quando aperti.'
+        : 'Bandi regionali o comunali per il fotovoltaico domestico, quando aperti (spesso per famiglie a basso reddito o per comuni piccoli), e PNRR 40% per impianti in comunità energetiche nei comuni sotto i 50.000 abitanti.';
+    if (m.fondo > 0) on.push(item('chk', 'Contributo a fondo perduto ' + fmtInt(s.fondoPerduto) + '%', fmtEur(m.fondo), txtF)); else off.push(item('off', 'Contributi a fondo perduto (bandi)', '', txtF));
+    // Conto Termico: per tutti, ma con le sue condizioni
+    const txtC = isAz(s)
+      ? 'Fino al 45–65% per gli edifici del terziario, ma il fotovoltaico è incentivato solo se realizzato insieme alla sostituzione dell’impianto di riscaldamento con una pompa di calore elettrica.'
+      : 'Il Conto Termico 3.0 incentiva la pompa di calore (fino al 65% per i privati), non i pannelli: sul fotovoltaico di case e condomini non spetta. Ha senso solo se l’impianto è abbinato a una pompa di calore, e in quel caso il contributo riguarda quella.';
+    if (m.contoTermico > 0) on.push(item('chk', 'Conto Termico 3.0 ' + fmtInt(s.contoTermico) + '%', fmtEur(m.contoTermico), txtC)); else (isAz(s) ? off : na).push(item(isAz(s) ? 'off' : 'na', 'Conto Termico 3.0', '', txtC));
+    // Comunità energetica / AUC
+    const txtA = 'Tariffa premio GSE per 20 anni sull’energia condivisa nella stessa ora tra impianto e membri (DM CACER): fino a 120 €/MWh sotto i 200 kW, +10 al Nord e +4 al Centro, più la restituzione ARERA di circa 9 €/MWh. Richiedibile fino al 31/12/2027. Vedi la sezione "La Comunità Energetica" qui sotto.';
     if (s.auc && y1.auc > 0) on.push(item('on', isCond(s) ? 'Autoconsumo collettivo (AUC)' : 'Comunità energetica (CER)', fmtEur(y1.auc) + ' l’anno × 20', txtA)); else off.push(item('off', isCond(s) ? 'Autoconsumo collettivo (AUC)' : 'Comunità energetica (CER)', '', txtA));
     on.push(item('on', 'Ritiro dedicato GSE', fmtEur(y1.vendita) + ' l’anno', 'L’energia in eccesso immessa in rete viene pagata dal GSE al prezzo zonale orario (circa 0,10–0,13 €/kWh nel 2026) o al minimo garantito di 0,0475 €/kWh. Lo scambio sul posto è chiuso ai nuovi impianti dal 2025.'));
     if (!isAz(s) || !s.ivaRec) on.push(item('on', 'IVA agevolata ' + fmtInt(s.iva) + '%', '', isAz(s) ? 'Aliquota applicata all’impianto.' : 'Sugli impianti fotovoltaici per uso residenziale e condominiale si applica l’IVA al 10% invece del 22%.'));
+    // Non applicabili
+    if (isCasa(s) || isCond(s)) na.push(item('na', 'Iperammortamento, Nuova Sabatini', '', 'Riservati alle imprese con partita IVA.'));
+    if (isAz(s)) { na.push(item('na', 'Transizione 5.0 (credito d’imposta)', '', 'Terminato il 31/12/2025: sostituito dall’iperammortamento.')); na.push(item('na', 'Bonus casa 50% / 36%', '', 'Riservato alle persone fisiche su immobili residenziali.')); }
+    na.push(item('na', 'Sconto in fattura e cessione del credito', '', 'Dal 2023 non sono più possibili per il fotovoltaico (DL 11/2023): la detrazione si usa solo nella dichiarazione dei redditi.'));
+    na.push(item('na', 'Scambio sul posto', '', 'Chiuso ai nuovi impianti dal 2025 (delibera ARERA 78/2025): l’eccesso si vende con il ritiro dedicato.'));
     document.getElementById('incSub').textContent = 'Cosa spetta a ' + (isCasa(s) ? 'una famiglia' : isCond(s) ? 'un condominio' : 'un’azienda') + ' nel 2026, e cosa è già conteggiato nel piano.';
     document.getElementById('incList').innerHTML = on.concat(off).join('');
     document.getElementById('incNa').innerHTML = na.join('') || '<p style="color:var(--muted);font-size:13px">Nessuno.</p>';
+  }
+
+  /* ---------------- La Comunità Energetica ---------------- */
+  function premioPerTaglia(s) {
+    const base = s.kwp <= 200 ? 0.12 : s.kwp <= 600 ? 0.11 : 0.10;
+    return base + (s.zona === 'nord' ? 0.010 : s.zona === 'centro' ? 0.004 : 0);
+  }
+  function renderCer(m) {
+    const s = state, y1 = m.rows[0];
+    const premio = isTerra(s) ? premioPerTaglia(s) : s.premio;
+    const rest = s.restituzione;
+    const quota = isTerra(s) ? 0.30 : (s.auc ? s.condivisa / 100 : 0.80);
+    const baseKwh = isTerra(s) ? y1.prod : y1.surplus;
+    const kwh = baseKwh * quota, euro = kwh * (premio + rest);
+    const chi = isCasa(s) ? 'una famiglia' : isCond(s) ? 'un condominio' : isAz(s) ? 'un’azienda' : 'un impianto a terra';
+    let perche;
+    if (isCasa(s)) perche = [
+      ['Se il tetto è piccolo, o non c’è', 'Si può entrare in una comunità anche solo come consumatori: senza pannelli, senza lavori, senza cambiare fornitore. Una parte del premio del GSE viene girata ai membri che consumano nelle ore giuste.'],
+      ['Se l’impianto c’è', 'L’energia che di giorno la casa non usa (' + fmtInt(y1.surplus) + ' kWh l’anno in questo piano) oggi si vende a pochi centesimi. Dentro una comunità la stessa energia, se un vicino la consuma nella stessa ora, vale <b>' + fmtDec(premio + rest, 3) + ' €/kWh in più</b>, per 20 anni.'],
+      ['Un vantaggio che resta in zona', 'I soldi del GSE non finiscono a un operatore lontano ma alla comunità: si possono usare per abbassare le spese di tutti, per aiutare le famiglie in difficoltà o per nuovi impianti nel quartiere.']
+    ];
+    else if (isCond(s)) perche = [
+      ['L’AUC è già una piccola comunità', 'Il gruppo di autoconsumo collettivo funziona con le stesse regole e lo stesso premio, ma resta dentro il palazzo: il condominio produce e gli appartamenti consumano. È il primo passo, e in questo piano vale <b>' + fmtEur(y1.auc) + ' l’anno</b>' + (s.auc ? '.' : ' se attivato.')],
+      ['La comunità allarga il gruppo', 'Aderendo a una CER di quartiere, l’energia che nemmeno gli appartamenti usano (weekend, ferie) viene condivisa con vicini, negozi, scuole o parrocchie collegati alla stessa cabina: il premio si prende anche su quella.'],
+      ['Il condominio può essere il centro', 'Un palazzo con un tetto grande può diventare il produttore di riferimento della comunità: ospita impianti anche per conto di altri e riceve una quota dei benefici. Con 52 famiglie o più i numeri diventano interessanti.']
+    ];
+    else if (isAz(s)) perche = [
+      ['L’eccesso del weekend vale di più', 'Un’azienda produce anche il sabato, la domenica e ad agosto, quando non consuma. Quell’energia (' + fmtInt(y1.surplus) + ' kWh l’anno in questo piano) in una comunità rende <b>' + fmtDec(premio + rest, 3) + ' €/kWh in più</b> invece dei soli 0,08–0,10 del ritiro dedicato.'],
+      ['Territorio e reputazione', 'Condividere energia con le famiglie e le attività del paese è un fatto concreto da raccontare a clienti e banche (bilancio di sostenibilità, ESG): è energia pulita che resta nella comunità locale, non un certificato comprato.'],
+      ['Le PMI possono essere membri', 'Le piccole e medie imprese possono aderire come membri (non le grandi), purché la produzione di energia non sia la loro attività principale. Un impianto in comunità resta compatibile con l’iperammortamento sull’autoconsumo.']
+    ];
+    else perche = [
+      ['Un impianto fino a 1 MW può essere l’impianto della comunità', 'La comunità ammette impianti fino a 1 MW: un impianto a terra può diventare il produttore di riferimento di un intero paese. Sull’energia che i membri consumano nella stessa ora si prende il premio GSE, oltre alla vendita in rete.'],
+      ['Attenzione alla tariffa FER-X', 'Il premio della comunità non si somma alla tariffa FER-X sulla stessa energia: si sceglie una delle due strade. Con la comunità l’energia si vende a mercato (o con ritiro dedicato) e in più si incassa il premio sulla parte condivisa: conviene quando ci sono molti consumatori vicini.'],
+      ['Consenso del territorio', 'Un impianto che fa risparmiare le famiglie del paese trova meno opposizione in Comune e in Regione, e nei comuni sotto i 50.000 abitanti ha avuto accesso al contributo PNRR del 40%.']
+    ];
+    const esempio = isTerra(s)
+      ? `Se una comunità con abbastanza membri consumasse nella stessa ora il <b>${fmtInt(quota * 100)}%</b> dei ${fmtInt(y1.prod / 1000)} MWh prodotti, il premio sarebbe di circa <b>${fmtEur(euro)} l’anno</b> (${fmtDec(premio + rest, 3)} €/kWh per un impianto da ${fmtDec(s.kwp / 1000, 2)} MW al ${s.zona === 'nord' ? 'Nord' : s.zona === 'centro' ? 'Centro' : 'Sud'}), cioè <b>${fmtEur(euro * 20)} in 20 anni</b>, in alternativa alla tariffa FER-X. Questo piano non lo conteggia: è una strada da valutare con il Comune.`
+      : `Questo impianto immette in rete circa <b>${fmtInt(y1.surplus)} kWh l’anno</b> che non vengono usati sul posto. Se il <b>${fmtInt(quota * 100)}%</b> venisse consumato nella stessa ora da${isCond(s) ? 'gli appartamenti o dai' : 'i'} membri della comunità, il GSE riconoscerebbe circa <b>${fmtEur(euro)} l’anno</b> (${fmtDec(premio, 3)} €/kWh di premio + ${fmtDec(rest, 3)} di restituzione ARERA), cioè <b>${fmtEur(euro * 20)} in 20 anni</b>. ${s.auc && y1.auc > 0 ? 'Nel piano è già conteggiato (' + fmtEur(y1.auc) + ' l’anno).' : 'Nel piano <b>non è conteggiato</b>: si attiva con "Comunità energetica" nelle variabili.'}`;
+    const diagram = `<svg class="chart cer-svg" viewBox="0 0 720 210" role="img" aria-label="Schema: l’impianto immette energia in rete, i membri della comunità la consumano nella stessa ora, il GSE paga un premio">
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+      <rect x="10" y="40" width="180" height="70" rx="10" fill="var(--s-pv)" opacity=".15"/><rect x="10" y="40" width="180" height="70" rx="10" fill="none" stroke="var(--s-pv)" stroke-width="1.5"/>
+      <text x="100" y="68" text-anchor="middle" class="strong" style="font-size:14px">Impianto</text><text x="100" y="88" text-anchor="middle" style="font-size:11.5px">produce e immette l’eccesso</text>
+      <rect x="270" y="40" width="180" height="70" rx="10" fill="var(--s-bill)" opacity=".12"/><rect x="270" y="40" width="180" height="70" rx="10" fill="none" stroke="var(--s-bill)" stroke-width="1.5"/>
+      <text x="360" y="68" text-anchor="middle" class="strong" style="font-size:14px">Rete elettrica</text><text x="360" y="88" text-anchor="middle" style="font-size:11.5px">stessa cabina primaria</text>
+      <rect x="530" y="40" width="180" height="70" rx="10" fill="var(--s-save)" opacity=".15"/><rect x="530" y="40" width="180" height="70" rx="10" fill="none" stroke="var(--s-save)" stroke-width="1.5"/>
+      <text x="620" y="68" text-anchor="middle" class="strong" style="font-size:14px">Membri</text><text x="620" y="88" text-anchor="middle" style="font-size:11.5px">famiglie, negozi, enti, PMI</text>
+      <line x1="192" y1="75" x2="266" y2="75" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/><line x1="452" y1="75" x2="526" y2="75" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="229" y="66" text-anchor="middle" style="font-size:10.5px">kWh immessi</text><text x="489" y="66" text-anchor="middle" style="font-size:10.5px">kWh prelevati</text>
+      <rect x="270" y="150" width="180" height="46" rx="10" fill="var(--accent)" /><text x="360" y="171" text-anchor="middle" style="font-size:13px;fill:var(--accent-ink);font-weight:700">GSE</text><text x="360" y="187" text-anchor="middle" style="font-size:10.5px;fill:var(--accent-ink)">confronta ora per ora</text>
+      <line x1="360" y1="112" x2="360" y2="146" stroke="var(--muted)" stroke-width="2" stroke-dasharray="4 3"/>
+      <path d="M452,173 C520,173 560,150 610,116" fill="none" stroke="var(--s-save)" stroke-width="2" marker-end="url(#arr)"/><text x="560" y="180" text-anchor="middle" class="val" style="fill:var(--good-text);font-size:11px">premio su ogni kWh condiviso, 20 anni</text>
+      <path d="M268,173 C200,173 160,150 110,116" fill="none" stroke="var(--s-pv)" stroke-width="2" marker-end="url(#arr)"/><text x="160" y="180" text-anchor="middle" class="val" style="fill:var(--s-pv);font-size:11px">quota al produttore</text>
+    </svg>`;
+    document.getElementById('cerSub').textContent = 'Cos’è, come funziona e perché può interessare a ' + chi + '.';
+    document.getElementById('cer').innerHTML =
+      `<div class="card cer-top"><div>
+        <h3>Cos’è</h3>
+        <p>Una <b>Comunità Energetica Rinnovabile (CER)</b> è un gruppo di famiglie, negozi, aziende, Comuni e associazioni della stessa zona che mettono in comune l’energia prodotta da impianti rinnovabili. Non è una società che vende corrente e non si cambia fornitore: ognuno continua a ricevere la propria bolletta. È come un gruppo d’acquisto, ma per l’energia del sole: chi ha il tetto produce, chi non ce l’ha consuma, e lo Stato premia l’energia che si scambiano.</p>
+        <p style="margin-top:8px">L’<b>autoconsumo collettivo (AUC)</b> è la stessa cosa in piccolo, dentro un solo edificio: tipicamente un condominio che produce sul tetto e condivide con gli appartamenti.</p>
+      </div><div>${diagram}</div></div>
+      <div class="three" style="margin-top:14px">
+        <div class="card"><h3>Come funziona</h3><ol class="cer-steps">
+          <li>L’impianto usa l’energia che serve sul posto e <b>immette in rete l’eccesso</b>.</li>
+          <li>Nella stessa ora i membri, collegati alla <b>stessa cabina primaria</b> (una zona di alcuni chilometri, consultabile sulla mappa del GSE), prelevano energia dalla rete come sempre.</li>
+          <li>Il GSE confronta ora per ora quanto è stato immesso e quanto prelevato: la parte che coincide è l’<b>energia condivisa</b>. Non serve nessun cavo nuovo: è un calcolo sui contatori.</li>
+          <li>Su ogni kWh condiviso il GSE paga per <b>20 anni</b> un premio (fino a 0,12 €/kWh sotto i 200 kW, più 0,010 al Nord e 0,004 al Centro) più circa 0,009 €/kWh di restituzione ARERA. L’eccesso resta comunque venduto in rete.</li>
+          <li>La comunità decide nel suo statuto <b>come dividere</b> i soldi tra chi produce e chi consuma.</li>
+        </ol></div>
+        <div class="card"><h3>Cosa serve</h3><ul class="cer-list">
+          <li>Un <b>soggetto giuridico</b> senza scopo di lucro (associazione, cooperativa, ente): può crearlo il gruppo o si può aderire a una comunità già esistente in zona.</li>
+          <li>Impianti <b>nuovi, fino a 1 MW</b> ciascuno, nella stessa cabina primaria dei membri.</li>
+          <li>Membri: famiglie, PMI (non come attività principale), Comuni, associazioni, parrocchie, enti del terzo settore. Le grandi imprese non possono aderire.</li>
+          <li>Una <b>pratica al GSE</b> per la configurazione; la tariffa premio è richiedibile fino al 31/12/2027.</li>
+          <li>Nei comuni sotto i 50.000 abitanti il PNRR copriva il <b>40%</b> dell’impianto a fondo perduto (lavori entro il 30/6/2026): oggi da verificare.</li>
+        </ul></div>
+        <div class="card"><h3>Perché può interessare a ${chi}</h3>${perche.map(p => `<p style="margin-top:8px"><b>${p[0]}.</b> ${p[1]}</p>`).join('')}</div>
+      </div>
+      <div class="cassa" style="margin-top:14px;max-width:none"><b>Cosa vale per questo impianto.</b> ${esempio}</div>`;
   }
 
   function renderCum(m) {
@@ -1420,14 +1520,14 @@
       ? `Con il finanziamento non c’è niente da "ripagare" in senso stretto: la rata (${fmtEur(m.rata)} al mese) è ${m.nettoY1Fin >= 0 ? 'più bassa' : 'più alta'} dei benefici che l’impianto produce ogni mese. ${m.nettoY1Fin >= 0 ? 'Si è in attivo fin dal primo anno' : 'La differenza è di ' + fmtEur(-m.nettoY1Fin) + ' l’anno nei primi ' + fmtInt(s.durata / 12) + ' anni'}. Pagando invece tutto in cassa, i ${fmtEur(m.investDaPagare)} rientrano in <b>${fmtYears(m.paybackCassa)}</b>.`
       : `Pagando in cassa, i ${fmtEur(m.investDaPagare)} rientrano in <b>${fmtYears(m.paybackCassa)}</b> grazie a risparmi e incentivi. Dopo, per tutta la vita dell’impianto (25–30 anni), è guadagno netto.`]);
     if (isCond(s)) {
-      items.push(['La detrazione fiscale arriva al condominio?', `No. La detrazione (${fmtEur(y1.detr)} l’anno per 10 anni) non entra nella cassa condominiale: l’amministratore comunica a ogni famiglia la sua quota di spesa e ciascuno la scarica dalle proprie tasse. Chi ha lì l’abitazione principale scarica il 50%, gli altri il 36%; chi paga poche tasse può non riuscire a usarla tutta. Per questo la pagina mostra sia il totale sia la sola cassa condominiale.`]);
+      items.push(['La detrazione fiscale arriva al condominio?', `No. La detrazione (${fmtEur(y1.detr)} l’anno per ${fmtInt(s.detrAnni)} anni) non entra nella cassa condominiale: l’amministratore comunica a ogni famiglia la sua quota di spesa e ciascuno la scarica dalle proprie tasse. Chi ha lì l’abitazione principale scarica il 50%, gli altri il 36%; chi paga poche tasse può non riuscire a usarla tutta. Per questo la pagina mostra sia il totale sia la sola cassa condominiale.`]);
       items.push(['E se un condomino non paga la sua quota?', 'Il finanziamento è intestato al condominio e la rata entra nelle spese ordinarie, ripartite per millesimi come la bolletta. Chi non paga viene gestito con gli strumenti soliti dell’amministratore, come per qualunque spesa comune. E il risparmio in bolletta abbassa le spese di tutti.']);
       items.push(['E se vendo casa?', 'L’impianto è un bene comune, come l’ascensore o la facciata. Chi compra subentra nei benefici e nella quota, e un palazzo con spese energetiche più basse si vende meglio.']);
       items.push(['Come funziona il gruppo di autoconsumo collettivo (AUC)?', `Il condominio è il referente verso il GSE; ogni famiglia aderisce con una firma, senza lavori in casa e senza cambiare fornitore. Quando il tetto produce più di quanto le parti comuni consumano, l’energia va in rete e, se nello stesso momento gli appartamenti la consumano, il GSE riconosce un premio per 20 anni (${fmtDec(s.premio, 3)} €/kWh più ${fmtDec(s.restituzione, 3)} di restituzione ARERA). Come dividere il premio si decide in assemblea.`]);
     }
     if (isCasa(s)) {
       items.push(['Serve la batteria?', s.batteria > 0 ? `Nel piano c’è una batteria da ${fmtDec(s.batteria, 1)} kWh: porta l’autoconsumo al ${fmtInt(m.quota * 100)}% (senza sarebbe il ${fmtInt(m.quotaBase * 100)}%). Dopo 10–12 anni va sostituita: il modello lo conteggia nell’anno 12.` : `Senza batteria il ${fmtInt(m.quota * 100)}% dell’energia viene usata subito. La batteria conviene quando si consuma soprattutto la sera: prova a inserirne una nelle variabili e guarda come cambiano rientro e guadagno.`]);
-      items.push(['Come si ottiene la detrazione?', 'Pagando con bonifico "parlante" e conservando fatture e documenti: la quota si scarica nella dichiarazione dei redditi in 10 anni. Chi paga poche tasse può non riuscire a usarla tutta: da verificare con il CAF o il commercialista.']);
+      items.push(['Come si ottiene la detrazione?', 'Pagando con bonifico "parlante" e conservando fatture e documenti: la quota si scarica nella dichiarazione dei redditi in ' + fmtInt(s.detrAnni) + ' anni. Chi paga poche tasse può non riuscire a usarla tutta: da verificare con il CAF o il commercialista.']);
       items.push(['E se un giorno cambio casa?', 'L’impianto resta con la casa e ne aumenta il valore e la classe energetica. Le rate di detrazione non ancora godute passano a chi compra, salvo accordo diverso.']);
     }
     if (isAz(s)) {
@@ -1469,7 +1569,7 @@
       s.auc ? ['Tariffa premio GSE (20 anni)' + tag.norm, fmtDec(s.premio, 3) + ' €/kWh'] : null,
       s.auc ? ['Restituzione ARERA' + tag.norm, fmtDec(s.restituzione, 3) + ' €/kWh'] : null,
       ['Vendita eccesso in rete', fmtDec(s.vendita, 3) + ' €/kWh'],
-      m.detrRate > 0 ? ['Detrazione fiscale (10 rate)' + tag.norm, fmtDec(m.detrRate, 1) + '%'] : null,
+      m.detrRate > 0 ? ['Detrazione fiscale (' + fmtInt(s.detrAnni) + ' rate)' + (m.detrRate > 50 ? tag.todo : tag.norm), fmtDec(m.detrRate, 1) + '%'] : null,
       m.iperTot > 0 ? ['Iperammortamento' + tag.norm + tag.todo, fmtInt(s.iperMagg) + '% × aliquota ' + fmtInt(s.aliquota) + '% su ' + fmtInt(s.anniAmm) + ' anni'] : null,
       m.sabatini > 0 ? ['Nuova Sabatini green' + tag.norm, '10% dell’investimento'] : null,
       m.fondo > 0 ? ['Contributo a fondo perduto' + tag.todo, fmtInt(s.fondoPerduto) + '%'] : null,
