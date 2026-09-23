@@ -88,7 +88,6 @@
   details.group > summary::-webkit-details-marker { display: none; }
   details.group > summary::after { content: ""; width: 8px; height: 8px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); margin-right: 4px; transition: transform .15s; }
   details.group[open] > summary::after { transform: rotate(225deg); margin-top: 4px; }
-  details.group.agent > summary { color: var(--warn); }
   .fields { display: grid; gap: 12px; padding-bottom: 6px; }
 
   .field label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink-2); font-weight: 500; }
@@ -258,11 +257,6 @@
   .contact b { font-family: var(--font-display); font-size: 16px; }
   .contact span { color: var(--ink-2); font-size: 14px; }
   .print-head { display: none; }
-  .agentbox { margin-top: 30px; border: 1px dashed var(--warn); border-radius: 10px; padding: 14px 18px; background: var(--warn-soft); }
-  .agentbox h2 { font-size: 15px; font-weight: 700; color: var(--warn); margin-bottom: 8px; }
-  .agentbox p, .agentbox li { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
-  .agentbox ul { margin: 6px 0 0; padding-left: 18px; }
-  .agentbox .big { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--ink); }
 
   .only-mobile { display: none; }
   @media (max-width: 960px) {
@@ -290,7 +284,7 @@
     @page { size: A4; margin: 12mm 12mm 14mm; }
     :root { color-scheme: light; --bg: #fff; --surface: #fff; --surface-2: #f1f3f0; --ink: #111; --ink-2: #333; --muted: #666; --line: #ddd; --line-strong: #bbb; }
     body { font-size: 12.5px; background: #fff; }
-    .side, .tip, .topbar, .noprint, .agentbox, .hint-vars { display: none !important; }
+    .side, .tip, .topbar, .noprint, .hint-vars { display: none !important; }
     .app { display: block; }
     .main { padding: 0; }
     .wrap { max-width: none; }
@@ -435,7 +429,6 @@
       </section>
 
       <div class="contact" id="contact"></div>
-      <div class="agentbox noprint" id="agentBox" hidden></div>
 
       <p class="foot">Modello a scopo di valutazione preliminare. Produzione, risparmio e incentivi sono stime basate sulle ipotesi indicate e vanno confermati con l'offerta definitiva dell'installatore, il commercialista del cliente e le regole GSE e fiscali in vigore al momento della domanda.</p>
     </div>
@@ -525,8 +518,6 @@
     unita: 30,
     // impianto a terra (vendita di energia)
     tracker: 0, disponibilita: 98, modVendita: 'ferx', ferx: 87, prezzoMercato: 95, rincaroMercato: 1, ppa: 70, durataPPA: 10, omKwp: 12, assKwp: 3, ettari: 1.6, affittoHa: 2500, altriCosti: 6000, inflazione: 2, aliquotaSpv: 27.9, anniAmmTerra: 11, istruttoriaPct: 1,
-    // agente
-    provv: 6
   };
   const PRESET_TIPO = {
     casa: { kwp: 4, costo: 7200, extra: 200, iva: 10, ivaRec: 0, om: 80, batteria: 0, costoBatteria: 0, consumo: 3800, f1: 25, f2: 30, f3: 45, spesa: 1100, fissa: 200, profilo: 'casa', auc: 0, condivisa: 0, detrazione: 50, detrMix: 0, unita: 1, iper: 0, sabatini: 0, fondoPerduto: 0, contoTermico: 0, reddito: 0, pagamento: 'cassa', durata: 60, degrado: 0.4, orizzonte: 25, acconto: 0, tasso: 5.9, istruttoria: 250, imposta: 0.25, incasso: 2.75 },
@@ -673,9 +664,6 @@
     ]},
     { title: 'Condominio', showIf: isCond, fields: [
       { key: 'unita', label: 'Famiglie (unità abitative)', unit: 'n.', min: 2, max: 500, step: 1, hint: 'Box esclusi. Serve per la media per famiglia.' }
-    ]},
-    { title: 'Area agente', agent: true, fields: [
-      { key: 'provv', label: 'Provvigione', unit: '%', min: 0, max: 20, step: 0.5, derived: s => fmtEur((s.costo + s.extra + s.costoBatteria) * s.provv / 100), hint: 'Sull’imponibile. Visibile solo a te: non finisce né nel PDF né nel link copiato.' }
     ]}
   ];
 
@@ -683,7 +671,6 @@
      STATO
      ===================================================================== */
   const STORE = 'jam-piano-fv-v1';
-  const AGENT = /[?&]agente/.test(location.search);
   const TEXT_KEYS = ['nome', 'localita', 'consulente', 'telefono', 'email', 'installatore', 'preventivo'];
   let state = loadState();
 
@@ -698,7 +685,7 @@
   }
   function stateDiff() {
     const diff = {};
-    Object.keys(DEFAULTS).forEach(k => { if (k !== 'provv' && state[k] !== DEFAULTS[k]) diff[k] = state[k]; });
+    Object.keys(DEFAULTS).forEach(k => { if (state[k] !== DEFAULTS[k]) diff[k] = state[k]; });
     return diff;
   }
   function saveState() {
@@ -1086,8 +1073,7 @@
   function buildSidebar() {
     groupsEl.innerHTML = '';
     GROUPS.forEach(g => {
-      if (g.agent && !AGENT) return;
-      const d = document.createElement('details'); d.className = 'group' + (g.agent ? ' agent' : ''); d.open = !g.agent; d.dataset.group = g.title;
+      const d = document.createElement('details'); d.className = 'group'; d.open = true; d.dataset.group = g.title;
       const sm = document.createElement('summary'); sm.textContent = g.title; d.appendChild(sm);
       const wrap = document.createElement('div'); wrap.className = 'fields';
       g.fields.forEach(f => wrap.appendChild(buildField(f)));
@@ -1170,7 +1156,7 @@
   function onChange(fromTyping) { saveState(); render(); syncSidebar(fromTyping); }
   function render() {
     const m = compute(state); lastModel = m;
-    renderHead(m); renderFacts(m); renderKpis(m); renderStory(m); renderWhy(m); renderFamily(m); renderBill(m); renderMonth(m); renderInc(m); renderCer(m); renderCum(m); renderFin(m); renderTable(m); renderSteps(m); renderFaq(m); renderAssump(m); renderContact(m); renderAgent(m);
+    renderHead(m); renderFacts(m); renderKpis(m); renderStory(m); renderWhy(m); renderFamily(m); renderBill(m); renderMonth(m); renderInc(m); renderCer(m); renderCum(m); renderFin(m); renderTable(m); renderSteps(m); renderFaq(m); renderAssump(m); renderContact(m);
   }
   const soggetto = s => isCasa(s) ? 'la famiglia' : isCond(s) ? 'il condominio' : 'l’azienda';
   const Soggetto = s => { const t = soggetto(s); return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -1982,16 +1968,6 @@
     el.innerHTML = `<b>${esc(s.consulente || 'Il tuo consulente')}</b>${s.telefono ? '<span>☎ ' + esc(s.telefono) + '</span>' : ''}${s.email ? '<span>✉ ' + esc(s.email) + '</span>' : ''}<span>Per domande, il sopralluogo o l’offerta definitiva.</span>`;
   }
 
-  function renderAgent(m) {
-    const s = state, el = document.getElementById('agentBox');
-    if (!AGENT) { el.hidden = true; return; }
-    el.hidden = false;
-    const imponibile = investimentoNetto(s);
-    const chiedi = isTerra(s) ? ['producibilità certificata (P50/P90) con layout e stringhe', 'preventivo di connessione STMG e costi della cabina di consegna', 'stato urbanistico del terreno e vincoli', 'contratto O&M con garanzia di disponibilità', 'garanzie moduli, inverter e strutture', 'tempi di cantiere e cronoprogramma autorizzativo'] : ['producibilità attesa in kWh/anno con le esposizioni delle falde', 'contratto di manutenzione: costo annuo e cosa include', 'cosa è escluso: sollevamento, verifica statica, allaccio, pratiche', 'garanzie di moduli, inverter e posa', 'tempi di consegna e validità dell’offerta'];
-    if (isAz(s)) chiedi.push('moduli iscritti al registro ENEA categoria B o C (serve per l’iperammortamento)', 'proposta di noleggio operativo per confronto');
-    if (isCond(s) || s.auc) chiedi.push('gestione della pratica AUC/CER: compresa o a parte, e a che costo');
-    el.innerHTML = `<h2>Area agente (non finisce nel PDF né nel link copiato)</h2><p>Provvigione stimata al ${fmtDec(s.provv, 1)}% sull’imponibile di ${fmtEur(imponibile)}: <span class="big">${fmtEur(imponibile * s.provv / 100)}</span></p><p style="margin-top:8px"><b>Da chiedere all’installatore prima dell’offerta definitiva:</b></p><ul>${chiedi.map(x => `<li>${x}</li>`).join('')}</ul>`;
-  }
 
   /* =====================================================================
      IMPORT PREVENTIVO SIPRO (PDF)
@@ -2371,7 +2347,7 @@
      ===================================================================== */
   document.getElementById('btnReset').addEventListener('click', () => {
     if (!window.confirm('Nuovo cliente: azzero tutti i dati inseriti?')) return;
-    const keep = { consulente: state.consulente, telefono: state.telefono, email: state.email, installatore: state.installatore, provv: state.provv };
+    const keep = { consulente: state.consulente, telefono: state.telefono, email: state.email, installatore: state.installatore };
     state = Object.assign({}, DEFAULTS, keep); onChange();
   });
   document.getElementById('btnShare').addEventListener('click', () => {
